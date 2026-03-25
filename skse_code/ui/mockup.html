@@ -1,0 +1,414 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AspectsAttributes Mockup</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        height: 100%;
+        font-family: "EB Garamond", "Times New Roman", Georgia, serif;
+        background: linear-gradient(180deg, #1a1510 0%, #0d0a08 100%);
+        color: #fff;
+        user-select: none;
+      }
+
+      .wrap {
+        height: 100%;
+        display: grid;
+        place-items: center;
+      }
+
+      .panel-frame {
+        width: min(1100px, calc(100vw - 48px));
+        background: rgba(10, 10, 10, 0.88);
+        border: 1px solid #b8b4a8;
+        box-shadow: inset 0 0 0 1px rgba(184, 180, 168, 0.6);
+        padding: 16px 20px 12px;
+        position: relative;
+      }
+
+      .panel-frame::before,
+      .panel-frame::after {
+        content: "";
+        position: absolute;
+        width: 12px;
+        height: 12px;
+        border-color: #b8b4a8;
+        border-style: solid;
+        border-width: 0;
+      }
+      .panel-frame::before {
+        top: -1px;
+        left: -1px;
+        border-top-width: 2px;
+        border-left-width: 2px;
+      }
+      .panel-frame::after {
+        top: -1px;
+        right: -1px;
+        border-top-width: 2px;
+        border-right-width: 2px;
+      }
+      .corner-bot-left,
+      .corner-bot-right {
+        position: absolute;
+        width: 12px;
+        height: 12px;
+        border-color: #b8b4a8;
+        border-style: solid;
+        border-width: 0;
+        bottom: -1px;
+      }
+      .corner-bot-left {
+        left: -1px;
+        border-bottom-width: 2px;
+        border-left-width: 2px;
+      }
+      .corner-bot-right {
+        right: -1px;
+        border-bottom-width: 2px;
+        border-right-width: 2px;
+      }
+
+      .topbar {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 10px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid rgba(184, 180, 168, 0.85);
+      }
+
+      .title {
+        font-size: 22px;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9);
+      }
+
+      .title-sub {
+        font-size: 12px;
+        color: #c9c4b8;
+        letter-spacing: 0.03em;
+      }
+
+      .subtitle {
+        font-size: 12px;
+        color: #c9c4b8;
+        letter-spacing: 0.02em;
+      }
+
+      .layout {
+        display: grid;
+        grid-template-columns: 380px 1fr;
+        gap: 16px;
+        align-items: start;
+        margin-top: 10px;
+      }
+
+      .left {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+      }
+
+      .right {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px 18px;
+      }
+
+      .section {
+        padding-top: 8px;
+        border-top: 1px solid rgba(184, 180, 168, 0.45);
+      }
+
+      .section-title {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 16px;
+        font-weight: 600;
+        letter-spacing: 0.03em;
+        margin-bottom: 8px;
+      }
+
+      .section-title .mini {
+        width: 12px;
+        height: 12px;
+        border: 1px solid rgba(184, 180, 168, 0.7);
+        opacity: 0.9;
+      }
+
+      .kv {
+        display: grid;
+        gap: 6px;
+      }
+
+      .kv-row {
+        display: grid;
+        grid-template-columns: 1fr 70px 18px 70px;
+        align-items: baseline;
+        gap: 10px;
+        font-size: 13px;
+        color: #c9c4b8;
+      }
+
+      .kv-row .label {
+        color: #e8e4dc;
+      }
+
+      .kv-row .val {
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+        color: #fff;
+      }
+
+      .kv-row .arrow {
+        text-align: center;
+        opacity: 0.8;
+      }
+
+      .spin {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        color: #c9c4b8;
+      }
+
+      .spin .carat {
+        display: inline-block;
+        width: 18px;
+        text-align: center;
+        opacity: 0.9;
+      }
+
+      .primary-btn {
+        width: 100%;
+        padding: 8px 10px;
+      }
+
+      .levelup-wrap {
+        margin-top: 10px;
+      }
+
+      .levelup-note {
+        margin-top: 6px;
+        font-size: 12px;
+        color: #c9c4b8;
+        opacity: 0.95;
+      }
+
+      /* legacy grid/row styles removed in this layout */
+
+      button {
+        border: 1px solid rgba(220, 218, 212, 0.6);
+        background: rgba(30, 30, 30, 0.95);
+        color: inherit;
+        border-radius: 0;
+        padding: 4px 10px;
+        cursor: pointer;
+        font-family: inherit;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+      }
+
+      button:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+      }
+
+      .gold {
+        color: #e8e4dc;
+      }
+
+      /* legacy footer styles removed in this layout */
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="panel-frame">
+        <span class="corner-bot-left" aria-hidden="true"></span>
+        <span class="corner-bot-right" aria-hidden="true"></span>
+
+        <div class="topbar">
+          <div>
+            <div class="title">Level Up</div>
+            <div class="title-sub">AspectsAttributes • Gold-based leveling</div>
+          </div>
+          <div class="subtitle">MP/HP/SP derived from attributes</div>
+        </div>
+
+        <div class="layout">
+          <div class="left">
+            <div class="section">
+              <div class="kv">
+                <div class="kv-row">
+                  <div class="label">Level</div>
+                  <div class="val">42</div>
+                  <div class="arrow">→</div>
+                  <div class="val">43</div>
+                </div>
+                <div class="kv-row">
+                  <div class="label">Gold Held</div>
+                  <div class="val" id="gold-held">12,450</div>
+                  <div class="arrow">→</div>
+                  <div class="val" id="gold-after">11,426</div>
+                </div>
+                <div class="kv-row">
+                  <div class="label">Gold Needed</div>
+                  <div class="val"></div>
+                  <div class="arrow"></div>
+                  <div class="val" id="gold-needed" style="color:#d06f5a;">1,024</div>
+                </div>
+              </div>
+
+              <div class="levelup-wrap">
+                <button id="level-up-btn" class="primary-btn">Level Up</button>
+                <div id="level-up-note" class="levelup-note" style="display:none;">
+                  Not enough gold to level up.
+                </div>
+              </div>
+            </div>
+
+            <div class="section">
+              <div class="section-title"></span>Attribute Points</div>
+
+              <div class="kv">
+                <div class="kv-row">
+                  <div class="label">Vigor</div>
+                  <div class="val">28</div>
+                  <div class="arrow">→</div>
+                  <div class="val"><span class="spin"><span class="carat">‹</span>29<span class="carat">›</span></span></div>
+                </div>
+                <div class="kv-row">
+                  <div class="label">Mind</div>
+                  <div class="val">14</div>
+                  <div class="arrow">→</div>
+                  <div class="val">14</div>
+                </div>
+                <div class="kv-row">
+                  <div class="label">Endurance</div>
+                  <div class="val">19</div>
+                  <div class="arrow">→</div>
+                  <div class="val">19</div>
+                </div>
+                <div class="kv-row">
+                  <div class="label">Strength</div>
+                  <div class="val">18</div>
+                  <div class="arrow">→</div>
+                  <div class="val">18</div>
+                </div>
+                <div class="kv-row">
+                  <div class="label">Dexterity</div>
+                  <div class="val">20</div>
+                  <div class="arrow">→</div>
+                  <div class="val">20</div>
+                </div>
+                <div class="kv-row">
+                  <div class="label">Intelligence</div>
+                  <div class="val">9</div>
+                  <div class="arrow">→</div>
+                  <div class="val">9</div>
+                </div>
+                <div class="kv-row">
+                  <div class="label">Faith</div>
+                  <div class="val">8</div>
+                  <div class="arrow">→</div>
+                  <div class="val">8</div>
+                </div>
+                <div class="kv-row">
+                  <div class="label">Arcane</div>
+                  <div class="val">12</div>
+                  <div class="arrow">→</div>
+                  <div class="val">12</div>
+                </div>
+              </div>
+
+              <div style="margin-top:10px;">
+                <button class="primary-btn">Confirm</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="right">
+            <div class="section">
+              <div class="section-title"></span>Base Stats</div>
+              <div class="kv">
+                <div class="kv-row"><div class="label">HP</div><div class="val">1450</div><div class="arrow">→</div><div class="val">1490</div></div>
+                <div class="kv-row"><div class="label">MP</div><div class="val">320</div><div class="arrow">→</div><div class="val">320</div></div>
+                <div class="kv-row"><div class="label">Stamina</div><div class="val">155</div><div class="arrow">→</div><div class="val">155</div></div>
+                <div class="kv-row"><div class="label">Carry Weight</div><div class="val">385</div><div class="arrow">→</div><div class="val">385</div></div>
+                <div class="kv-row"><div class="label">Poise</div><div class="val">30</div><div class="arrow">→</div><div class="val">30</div></div>
+                <div class="kv-row"><div class="label">Discovery</div><div class="val">107.0</div><div class="arrow">→</div><div class="val">107.0</div></div>
+              </div>
+            </div>
+
+            <div class="section">
+              <div class="section-title"></span>Defense Power</div>
+              <div class="kv">
+                <div class="kv-row"><div class="label">Physical</div><div class="val">79</div><div class="arrow">→</div><div class="val">80</div></div>
+                <div class="kv-row"><div class="label">VS Strike</div><div class="val">79</div><div class="arrow">→</div><div class="val">80</div></div>
+                <div class="kv-row"><div class="label">VS Slash</div><div class="val">79</div><div class="arrow">→</div><div class="val">80</div></div>
+                <div class="kv-row"><div class="label">VS Pierce</div><div class="val">79</div><div class="arrow">→</div><div class="val">80</div></div>
+                <div class="kv-row"><div class="label">Magic</div><div class="val">93</div><div class="arrow">→</div><div class="val">93</div></div>
+                <div class="kv-row"><div class="label">Fire</div><div class="val">85</div><div class="arrow">→</div><div class="val">85</div></div>
+                <div class="kv-row"><div class="label">Lightning</div><div class="val">75</div><div class="arrow">→</div><div class="val">75</div></div>
+                <div class="kv-row"><div class="label">Holy</div><div class="val">89</div><div class="arrow">→</div><div class="val">89</div></div>
+              </div>
+            </div>
+
+            <div class="section" style="grid-column: 2 / 3;">
+              <div class="section-title"></span>Body</div>
+              <div class="kv">
+                <div class="kv-row"><div class="label">Immunity</div><div class="val">173</div><div class="arrow">→</div><div class="val">174</div></div>
+                <div class="kv-row"><div class="label">Robustness</div><div class="val">225</div><div class="arrow">→</div><div class="val">226</div></div>
+                <div class="kv-row"><div class="label">Focus</div><div class="val">145</div><div class="arrow">→</div><div class="val">145</div></div>
+                <div class="kv-row"><div class="label">Vitality</div><div class="val">152</div><div class="arrow">→</div><div class="val">152</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <script>
+          (function () {
+            function parseNum(text) {
+              return parseInt(String(text).replace(/[^0-9]/g, ""), 10) || 0;
+            }
+            function fmt(n) {
+              return n.toLocaleString("en-US");
+            }
+
+            var heldEl = document.getElementById("gold-held");
+            var needEl = document.getElementById("gold-needed");
+            var afterEl = document.getElementById("gold-after");
+            var btn = document.getElementById("level-up-btn");
+            var note = document.getElementById("level-up-note");
+            if (!heldEl || !needEl || !afterEl || !btn || !note) return;
+
+            var held = parseNum(heldEl.textContent);
+            var need = parseNum(needEl.textContent);
+            var can = held >= need;
+
+            afterEl.textContent = fmt(Math.max(0, held - need));
+            btn.style.display = can ? "inline-block" : "none";
+            note.style.display = can ? "none" : "block";
+          })();
+        </script>
+      </div>
+    </div>
+  </body>
+</html>
+

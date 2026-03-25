@@ -1,0 +1,142 @@
+[ER_VIG]
+type = "Adaptive"
+alias = "Variable07"
+default.formula = "0"
+
+[ER_MND]
+type = "Adaptive"
+alias = "Variable08"
+default.formula = "0"
+
+[ER_END]
+type = "Adaptive"
+alias = "Variable09"
+default.formula = "0"
+
+[ER_STR]
+type = "Adaptive"
+alias = "Variable10"
+default.formula = "0"
+
+[ER_DEX]
+type = "Adaptive"
+alias = "Variable11"
+default.formula = "0"
+
+[ER_INT]
+type = "Adaptive"
+alias = "Variable12"
+default.formula = "0"
+
+[ER_FTH]
+type = "Adaptive"
+alias = "Variable13"
+default.formula = "0"
+
+[ER_ARC]
+type = "Adaptive"
+alias = "Variable14"
+default.formula = "0"
+
+[ER_L1DEF_PHYS_AVG]
+type = "Adaptive"
+alias = "Variable15"
+default.formula = "0"
+
+[ER_L1DEF_MAGIC_AVG]
+type = "Adaptive"
+alias = "Variable16"
+default.formula = "0"
+
+[ER_L1DEF_FIRE_AVG]
+type = "Adaptive"
+alias = "Variable17"
+default.formula = "0"
+
+[ER_L1DEF_FROST_AVG]
+type = "Adaptive"
+alias = "Variable18"
+default.formula = "0"
+
+[ER_L1DEF_POISON_AVG]
+type = "Adaptive"
+alias = "Variable19"
+default.formula = "0"
+
+[ER_L1DEF_LIGHTNING_AVG]
+type = "Adaptive"
+alias = "Variable20"
+default.formula = "0"
+
+[ER_THRES_IMMUNITY_AVG]
+type = "Adaptive"
+alias = "Variable21"
+default.formula = "0"
+
+[ER_THRES_ROBUSTNESS_AVG]
+type = "Adaptive"
+alias = "Variable22"
+default.formula = "0"
+
+[ER_THRES_FOCUS_AVG]
+type = "Adaptive"
+alias = "Variable23"
+default.formula = "0"
+
+[ER_THRES_VITALITY_AVG]
+type = "Adaptive"
+alias = "Variable24"
+default.formula = "0"
+
+[ER_THRES_MADNESS_AVG]
+type = "Adaptive"
+alias = "Variable25"
+default.formula = "0"
+
+[ER_EQUIPLOAD_MAX_AVG]
+type = "Adaptive"
+alias = "Variable26"
+default.formula = "0"
+
+[ER_EQUIPLOAD_LIGHT_AVG]
+type = "Adaptive"
+alias = "Variable27"
+default.formula = "0"
+
+[ER_EQUIPLOAD_MEDIUM_AVG]
+type = "Adaptive"
+alias = "Variable28"
+default.formula = "0"
+
+[ER_EQUIPLOAD_HEAVY_AVG]
+type = "Adaptive"
+alias = "Variable29"
+default.formula = "0"
+
+
+[Include]
+"AspectsAttributes.esp" = [
+  "ER_VIG",
+  "ER_MND",
+  "ER_END",
+  "ER_STR",
+  "ER_DEX",
+  "ER_INT",
+  "ER_FTH",
+  "ER_ARC",
+  "ER_L1DEF_PHYS_AVG",
+  "ER_L1DEF_MAGIC_AVG",
+  "ER_L1DEF_FIRE_AVG",
+  "ER_L1DEF_FROST_AVG",
+  "ER_L1DEF_POISON_AVG",
+  "ER_L1DEF_LIGHTNING_AVG",
+  "ER_THRES_IMMUNITY_AVG",
+  "ER_THRES_ROBUSTNESS_AVG",
+  "ER_THRES_FOCUS_AVG",
+  "ER_THRES_VITALITY_AVG",
+  "ER_THRES_MADNESS_AVG",
+  "ER_EQUIPLOAD_MAX_AVG",
+  "ER_EQUIPLOAD_LIGHT_AVG",
+  "ER_EQUIPLOAD_MEDIUM_AVG",
+  "ER_EQUIPLOAD_HEAVY_AVG"
+]

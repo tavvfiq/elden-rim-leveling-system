@@ -1,0 +1,5 @@
+{
+    cmdlines = {
+        "xmake lua /Users/taufiq.nugroho/.local/share/xmake/modules/private/utils/statistics.lua --verbose"
+    }
+}
