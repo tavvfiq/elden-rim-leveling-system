@@ -2,13 +2,47 @@ import React, { useEffect, useMemo, useState } from "react";
 
 type AttrKey = "vig" | "mnd" | "end" | "str" | "dex" | "int" | "fth" | "arc";
 
+type DefenseSheet = {
+  physical: number;
+  magic: number;
+  fire: number;
+  lightning: number;
+  frost: number;
+  poison: number;
+};
+
+type ThresholdSheet = {
+  immunity: number;
+  robustness: number;
+  focus: number;
+  vitality: number;
+  madness: number;
+};
+
+type EquipLoadSheet = {
+  max: number;
+  light: number;
+  medium: number;
+  heavy: number;
+};
+
+type DerivedBlock = {
+  maxHP: number;
+  maxMP: number;
+  maxSP: number;
+  carryWeight: number;
+  defense?: DefenseSheet;
+  thresholds?: ThresholdSheet;
+  equipLoad?: EquipLoadSheet;
+};
+
 type StatePayload = {
   ready: boolean;
   levelUpMenuOpen: boolean;
   attributes: Record<AttrKey, number>;
   points: { spent: number; level: number; unspent: number };
-  derived: { maxHP: number; maxMP: number; maxSP: number; carryWeight: number };
-  derivedPending: { maxHP: number; maxMP: number; maxSP: number; carryWeight: number };
+  derived: DerivedBlock;
+  derivedPending: DerivedBlock;
   gold: { current: number; levelUpCost: number; canLevelUp: boolean };
   pending: { attributes: Partial<Record<AttrKey, number>> };
 };
@@ -34,6 +68,11 @@ const statLabels: Record<AttrKey, string> = {
   fth: "Faith",
   arc: "Arcane",
 };
+
+function fmtSheet(n: number | undefined): string {
+  if (n === undefined || Number.isNaN(n)) return "—";
+  return String(Math.round(n));
+}
 
 export function App() {
   const [state, setState] = useState<StatePayload | null>(null);
@@ -62,6 +101,9 @@ export function App() {
   const unspent = state?.points.unspent ?? 0;
   const hasPending = Object.values(pending).some((v) => (v ?? 0) > 0);
 
+  const d = state?.derived;
+  const dp = state?.derivedPending;
+
   const send = (fn: keyof Window, payload: unknown) => {
     const f = (window as any)[fn];
     if (typeof f === "function") f(JSON.stringify(payload ?? {}));
@@ -76,9 +118,7 @@ export function App() {
         <div className="topbar">
           <div>
             <div className="title">Level Up</div>
-            <div className="titleSub">AspectsAttributes • Gold-based leveling</div>
           </div>
-          <div className="subtitle">MP/HP/SP derived from attributes</div>
         </div>
 
         <div className="layout">
@@ -196,6 +236,24 @@ export function App() {
                   <div className="arrow">→</div>
                   <div className="val">{state?.derivedPending.carryWeight ?? 0}</div>
                 </div>
+                <div className="kvRow">
+                  <div className="label">Equip load max</div>
+                  <div className="val">{fmtSheet(d?.equipLoad?.max)}</div>
+                  <div className="arrow">→</div>
+                  <div className="val">{fmtSheet(dp?.equipLoad?.max)}</div>
+                </div>
+                <div className="kvRow">
+                  <div className="label">Equip light tier</div>
+                  <div className="val">{fmtSheet(d?.equipLoad?.light)}</div>
+                  <div className="arrow">→</div>
+                  <div className="val">{fmtSheet(dp?.equipLoad?.light)}</div>
+                </div>
+                <div className="kvRow">
+                  <div className="label">Equip medium tier</div>
+                  <div className="val">{fmtSheet(d?.equipLoad?.medium)}</div>
+                  <div className="arrow">→</div>
+                  <div className="val">{fmtSheet(dp?.equipLoad?.medium)}</div>
+                </div>
               </div>
             </div>
 
@@ -204,57 +262,75 @@ export function App() {
               <div className="kv">
                 <div className="kvRow">
                   <div className="label">Physical</div>
-                  <div className="val">—</div>
+                  <div className="val">{fmtSheet(d?.defense?.physical)}</div>
                   <div className="arrow">→</div>
-                  <div className="val">—</div>
+                  <div className="val">{fmtSheet(dp?.defense?.physical)}</div>
                 </div>
                 <div className="kvRow">
                   <div className="label">Magic</div>
-                  <div className="val">—</div>
+                  <div className="val">{fmtSheet(d?.defense?.magic)}</div>
                   <div className="arrow">→</div>
-                  <div className="val">—</div>
+                  <div className="val">{fmtSheet(dp?.defense?.magic)}</div>
                 </div>
                 <div className="kvRow">
                   <div className="label">Fire</div>
-                  <div className="val">—</div>
+                  <div className="val">{fmtSheet(d?.defense?.fire)}</div>
                   <div className="arrow">→</div>
-                  <div className="val">—</div>
+                  <div className="val">{fmtSheet(dp?.defense?.fire)}</div>
                 </div>
                 <div className="kvRow">
                   <div className="label">Lightning</div>
-                  <div className="val">—</div>
+                  <div className="val">{fmtSheet(d?.defense?.lightning)}</div>
                   <div className="arrow">→</div>
-                  <div className="val">—</div>
+                  <div className="val">{fmtSheet(dp?.defense?.lightning)}</div>
+                </div>
+                <div className="kvRow">
+                  <div className="label">Frost</div>
+                  <div className="val">{fmtSheet(d?.defense?.frost)}</div>
+                  <div className="arrow">→</div>
+                  <div className="val">{fmtSheet(dp?.defense?.frost)}</div>
+                </div>
+                <div className="kvRow">
+                  <div className="label">Poison</div>
+                  <div className="val">{fmtSheet(d?.defense?.poison)}</div>
+                  <div className="arrow">→</div>
+                  <div className="val">{fmtSheet(dp?.defense?.poison)}</div>
                 </div>
               </div>
             </div>
 
             <div className="section" style={{ gridColumn: "2 / 3" }}>
-              <div className="sectionTitle">Body</div>
+              <div className="sectionTitle">Body (thresholds)</div>
               <div className="kv">
                 <div className="kvRow">
                   <div className="label">Immunity</div>
-                  <div className="val">—</div>
+                  <div className="val">{fmtSheet(d?.thresholds?.immunity)}</div>
                   <div className="arrow">→</div>
-                  <div className="val">—</div>
+                  <div className="val">{fmtSheet(dp?.thresholds?.immunity)}</div>
                 </div>
                 <div className="kvRow">
                   <div className="label">Robustness</div>
-                  <div className="val">—</div>
+                  <div className="val">{fmtSheet(d?.thresholds?.robustness)}</div>
                   <div className="arrow">→</div>
-                  <div className="val">—</div>
+                  <div className="val">{fmtSheet(dp?.thresholds?.robustness)}</div>
                 </div>
                 <div className="kvRow">
                   <div className="label">Focus</div>
-                  <div className="val">—</div>
+                  <div className="val">{fmtSheet(d?.thresholds?.focus)}</div>
                   <div className="arrow">→</div>
-                  <div className="val">—</div>
+                  <div className="val">{fmtSheet(dp?.thresholds?.focus)}</div>
                 </div>
                 <div className="kvRow">
                   <div className="label">Vitality</div>
-                  <div className="val">—</div>
+                  <div className="val">{fmtSheet(d?.thresholds?.vitality)}</div>
                   <div className="arrow">→</div>
-                  <div className="val">—</div>
+                  <div className="val">{fmtSheet(dp?.thresholds?.vitality)}</div>
+                </div>
+                <div className="kvRow">
+                  <div className="label">Madness</div>
+                  <div className="val">{fmtSheet(d?.thresholds?.madness)}</div>
+                  <div className="arrow">→</div>
+                  <div className="val">{fmtSheet(dp?.thresholds?.madness)}</div>
                 </div>
               </div>
             </div>

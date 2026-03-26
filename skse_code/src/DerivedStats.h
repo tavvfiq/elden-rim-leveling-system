@@ -12,6 +12,29 @@ namespace ER
 		std::int32_t carryWeight{ 300 };
 	};
 
+	// Layer-1 defenses + status thresholds + equip-load tiers (derived_stats_map.md).
+	// Single source for AV publish + Prisma JSON preview.
+	struct PublishedSheetAVGs
+	{
+		float l1Phys{};
+		float l1Magic{};
+		float l1Fire{};
+		float l1Lightning{};
+		float l1Frost{};
+		float l1Poison{};
+		float thImmunity{};
+		float thRobustness{};
+		float thFocus{};
+		float thVitality{};
+		float thMadness{};
+		float equipLoadMax{};
+		float equipLoadLight{};
+		float equipLoadMedium{};
+		float equipLoadHeavy{};
+	};
+
+	PublishedSheetAVGs ComputePublishedSheetAVGs(const AttributeSet& attrs, std::int32_t erLevel, const DerivedStats& derived);
+
 	// Initial, placeholder “ER-like” softcap curves.
 	// We can replace coefficients later to match ER precisely.
 	std::int32_t ComputeHP(std::int32_t vig);

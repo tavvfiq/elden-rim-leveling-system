@@ -201,6 +201,9 @@ namespace
 		const auto derived = ER::ComputeDerived(attrs);
 		const auto derivedPending = ER::ComputeDerived(pendingAttrs);
 
+		const auto sheet = ER::ComputePublishedSheetAVGs(attrs, level, derived);
+		const auto sheetPending = ER::ComputePublishedSheetAVGs(pendingAttrs, level, derivedPending);
+
 		json j;
 		j["ready"] = true;
 		j["levelUpMenuOpen"] = g_levelUpMenuOpen;
@@ -234,12 +237,60 @@ namespace
 			{ "maxMP", derived.maxMP },
 			{ "maxSP", derived.maxSP },
 			{ "carryWeight", derived.carryWeight },
+			{ "defense",
+				{
+					{ "physical", sheet.l1Phys },
+					{ "magic", sheet.l1Magic },
+					{ "fire", sheet.l1Fire },
+					{ "lightning", sheet.l1Lightning },
+					{ "frost", sheet.l1Frost },
+					{ "poison", sheet.l1Poison },
+				} },
+			{ "thresholds",
+				{
+					{ "immunity", sheet.thImmunity },
+					{ "robustness", sheet.thRobustness },
+					{ "focus", sheet.thFocus },
+					{ "vitality", sheet.thVitality },
+					{ "madness", sheet.thMadness },
+				} },
+			{ "equipLoad",
+				{
+					{ "max", sheet.equipLoadMax },
+					{ "light", sheet.equipLoadLight },
+					{ "medium", sheet.equipLoadMedium },
+					{ "heavy", sheet.equipLoadHeavy },
+				} },
 		};
 		j["derivedPending"] = {
 			{ "maxHP", derivedPending.maxHP },
 			{ "maxMP", derivedPending.maxMP },
 			{ "maxSP", derivedPending.maxSP },
 			{ "carryWeight", derivedPending.carryWeight },
+			{ "defense",
+				{
+					{ "physical", sheetPending.l1Phys },
+					{ "magic", sheetPending.l1Magic },
+					{ "fire", sheetPending.l1Fire },
+					{ "lightning", sheetPending.l1Lightning },
+					{ "frost", sheetPending.l1Frost },
+					{ "poison", sheetPending.l1Poison },
+				} },
+			{ "thresholds",
+				{
+					{ "immunity", sheetPending.thImmunity },
+					{ "robustness", sheetPending.thRobustness },
+					{ "focus", sheetPending.thFocus },
+					{ "vitality", sheetPending.thVitality },
+					{ "madness", sheetPending.thMadness },
+				} },
+			{ "equipLoad",
+				{
+					{ "max", sheetPending.equipLoadMax },
+					{ "light", sheetPending.equipLoadLight },
+					{ "medium", sheetPending.equipLoadMedium },
+					{ "heavy", sheetPending.equipLoadHeavy },
+				} },
 		};
 		return j.dump();
 	}

@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>AspectsAttributes Mockup</title>
+    <title>Level Up — UI mockup</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
@@ -200,6 +200,17 @@
         padding: 8px 10px;
       }
 
+      .ghost-btn {
+        width: 100%;
+        margin-top: 8px;
+        padding: 8px 10px;
+        background: rgba(0, 0, 0, 0.1);
+      }
+
+      .danger {
+        color: #d06f5a;
+      }
+
       .levelup-wrap {
         margin-top: 10px;
       }
@@ -246,9 +257,7 @@
         <div class="topbar">
           <div>
             <div class="title">Level Up</div>
-            <div class="title-sub">AspectsAttributes • Gold-based leveling</div>
           </div>
-          <div class="subtitle">MP/HP/SP derived from attributes</div>
         </div>
 
         <div class="layout">
@@ -271,7 +280,7 @@
                   <div class="label">Gold Needed</div>
                   <div class="val"></div>
                   <div class="arrow"></div>
-                  <div class="val" id="gold-needed" style="color:#d06f5a;">1,024</div>
+                  <div class="val danger" id="gold-needed">1,024</div>
                 </div>
               </div>
 
@@ -284,7 +293,8 @@
             </div>
 
             <div class="section">
-              <div class="section-title"></span>Attribute Points</div>
+              <div class="section-title">Attribute Points</div>
+              <div class="subtitle" style="margin-bottom: 8px">Unspent: 1</div>
 
               <div class="kv">
                 <div class="kv-row">
@@ -337,46 +347,47 @@
                 </div>
               </div>
 
-              <div style="margin-top:10px;">
-                <button class="primary-btn">Confirm</button>
+              <div style="margin-top: 10px">
+                <button class="primary-btn" type="button">Confirm</button>
+                <button class="ghost-btn" type="button">Cancel</button>
               </div>
             </div>
           </div>
 
           <div class="right">
             <div class="section">
-              <div class="section-title"></span>Base Stats</div>
+              <div class="section-title">Base Stats</div>
               <div class="kv">
                 <div class="kv-row"><div class="label">HP</div><div class="val">1450</div><div class="arrow">→</div><div class="val">1490</div></div>
                 <div class="kv-row"><div class="label">MP</div><div class="val">320</div><div class="arrow">→</div><div class="val">320</div></div>
                 <div class="kv-row"><div class="label">Stamina</div><div class="val">155</div><div class="arrow">→</div><div class="val">155</div></div>
                 <div class="kv-row"><div class="label">Carry Weight</div><div class="val">385</div><div class="arrow">→</div><div class="val">385</div></div>
-                <div class="kv-row"><div class="label">Poise</div><div class="val">30</div><div class="arrow">→</div><div class="val">30</div></div>
-                <div class="kv-row"><div class="label">Discovery</div><div class="val">107.0</div><div class="arrow">→</div><div class="val">107.0</div></div>
+                <div class="kv-row"><div class="label">Equip load max</div><div class="val">395</div><div class="arrow">→</div><div class="val">395</div></div>
+                <div class="kv-row"><div class="label">Equip light tier</div><div class="val">119</div><div class="arrow">→</div><div class="val">119</div></div>
+                <div class="kv-row"><div class="label">Equip medium tier</div><div class="val">277</div><div class="arrow">→</div><div class="val">277</div></div>
               </div>
             </div>
 
             <div class="section">
-              <div class="section-title"></span>Defense Power</div>
+              <div class="section-title">Defense Power</div>
               <div class="kv">
                 <div class="kv-row"><div class="label">Physical</div><div class="val">79</div><div class="arrow">→</div><div class="val">80</div></div>
-                <div class="kv-row"><div class="label">VS Strike</div><div class="val">79</div><div class="arrow">→</div><div class="val">80</div></div>
-                <div class="kv-row"><div class="label">VS Slash</div><div class="val">79</div><div class="arrow">→</div><div class="val">80</div></div>
-                <div class="kv-row"><div class="label">VS Pierce</div><div class="val">79</div><div class="arrow">→</div><div class="val">80</div></div>
                 <div class="kv-row"><div class="label">Magic</div><div class="val">93</div><div class="arrow">→</div><div class="val">93</div></div>
                 <div class="kv-row"><div class="label">Fire</div><div class="val">85</div><div class="arrow">→</div><div class="val">85</div></div>
                 <div class="kv-row"><div class="label">Lightning</div><div class="val">75</div><div class="arrow">→</div><div class="val">75</div></div>
-                <div class="kv-row"><div class="label">Holy</div><div class="val">89</div><div class="arrow">→</div><div class="val">89</div></div>
+                <div class="kv-row"><div class="label">Frost</div><div class="val">93</div><div class="arrow">→</div><div class="val">93</div></div>
+                <div class="kv-row"><div class="label">Poison</div><div class="val">93</div><div class="arrow">→</div><div class="val">93</div></div>
               </div>
             </div>
 
             <div class="section" style="grid-column: 2 / 3;">
-              <div class="section-title"></span>Body</div>
+              <div class="section-title">Body (thresholds)</div>
               <div class="kv">
                 <div class="kv-row"><div class="label">Immunity</div><div class="val">173</div><div class="arrow">→</div><div class="val">174</div></div>
                 <div class="kv-row"><div class="label">Robustness</div><div class="val">225</div><div class="arrow">→</div><div class="val">226</div></div>
                 <div class="kv-row"><div class="label">Focus</div><div class="val">145</div><div class="arrow">→</div><div class="val">145</div></div>
                 <div class="kv-row"><div class="label">Vitality</div><div class="val">152</div><div class="arrow">→</div><div class="val">152</div></div>
+                <div class="kv-row"><div class="label">Madness</div><div class="val">885</div><div class="arrow">→</div><div class="val">905</div></div>
               </div>
             </div>
           </div>
