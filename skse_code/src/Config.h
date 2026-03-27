@@ -26,4 +26,6 @@ namespace ER::Config
 	bool OverridePlayerGetLevel() noexcept;
 	bool DisableVanillaXPGain() noexcept;
 	bool EnableGoldKillDrops() noexcept;
+	bool EnablePerkPointParity() noexcept;
+	bool EnablePerkAutoUnlock() noexcept;
 }

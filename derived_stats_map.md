@@ -1,5 +1,8 @@
 # Aspects & ERCF Attribute Mapping
 
+> Current implementation reference: `skse_code/src/DerivedStats.cpp`.
+> This file describes intended/implemented mapping for derived outputs consumed by UI/API/integration mods.
+
 This document outlines how the 8 custom `ER_*` ActorValues govern the player's derived stats, defenses, and offensive scaling, entirely replacing vanilla Skyrim skills and perks.
 
 ## 1. Vigor (`ER_VIG`)

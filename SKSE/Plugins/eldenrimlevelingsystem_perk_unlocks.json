@@ -1,0 +1,21 @@
+{
+  "autoUnlockPerks": [
+    { "editorId": "SteelSmithing", "minERLevel": 2 },
+    { "editorId": "ArcaneBlacksmith", "minERLevel": 10 },
+    { "editorId": "ElvenSmithing", "minERLevel": 12 },
+    { "editorId": "DwarvenSmithing", "minERLevel": 16 },
+    { "editorId": "OrcishSmithing", "minERLevel": 20 },
+    { "editorId": "EbonySmithing", "minERLevel": 30 },
+    { "editorId": "GlassSmithing", "minERLevel": 40 },
+    { "editorId": "DaedricSmithing", "minERLevel": 50 },
+    { "editorId": "DragonArmor", "minERLevel": 60 },
+    { "editorId": "Enchanter00", "minERLevel": 2 },
+    { "editorId": "Enchanter01", "minERLevel": 10 },
+    { "editorId": "Enchanter02", "minERLevel": 20 },
+    { "editorId": "Enchanter03", "minERLevel": 30 },
+    { "editorId": "Enchanter04", "minERLevel": 40 },
+    { "editorId": "InsightfulEnchanter", "minERLevel": 25 },
+    { "editorId": "CorpusEnchanter", "minERLevel": 30 },
+    { "editorId": "ExtraEffect", "minERLevel": 50 }
+  ]
+}

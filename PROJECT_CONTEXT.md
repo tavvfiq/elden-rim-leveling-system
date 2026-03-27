@@ -1,30 +1,49 @@
-# Project context: Aspects / Elden Rim Leveling System
+# Project Context: Elden Rim Leveling System
 
-This workspace is a **Skyrim mod Data-style layout**: SKSE plugin sources, PrismaUI bundle, ActorValueData TOML, plugin INI, and markdown specs. **Papyrus sources and MCM Helper JSON were removed** from the repo; tuning lives in the SKSE plugin INI.
+This repository contains a native SKSE mod that replaces vanilla level-up flow with an Elden Ring-style attribute progression loop.
 
-## What this mod is (current direction)
+## Current architecture
 
-- **Native SKSE plugin** (`skse_code/`, xmake target `eldenrimlevelingsystem`): hooks vanilla `LevelUpMenu`, drives **PrismaUI** for ER-style allocation, gold-as-runes level cost, `ER_*` attributes, derived stats, and published `ER_*_AVG` sheet values for ERCF.
-- **ESP** (`AspectsAttributes.esp` when you maintain it in the CK): still needed in-game for forms / AVG registration workflow; it is **not** tracked in this workspace snapshot in some setups.
-- **Tuning**: `SKSE/Plugins/eldenrimlevelingsystem.ini` (must sit next to the built DLL; same stem as the DLL file name).
+- **Core plugin**: `skse_code/` (`eldenrimlevelingsystem.dll`)
+- **UI**: PrismaUI + React app in `skse_code/ui/`
+- **State storage**: SKSE serialization (`Persist::*`) for:
+  - ER level
+  - ER attributes (8 stats)
+  - progression sync state (perk parity baseline)
+- **No ActorValueGenerator dependency** for ER stat storage
+  - ER attributes are no longer dependent on AVG alias slots
+  - derived sheet values are computed on demand and exposed via APIs
 
-## Repository layout (top-level)
+## Runtime systems implemented
 
-- `skse_code/`
-  - C++ plugin (CommonLibSSE-NG), Prisma bridge, hooks, serialization, economy, derived stats, config loader.
-- `skse_code/ui/`
-  - Vite + React PrismaUI app; build output is packaged under PrismaUI views (see `skse_code/README_SKSE.md`).
-- `SKSE/Plugins/ActorValueData/PerkModAttributes_AVG.toml`
-  - Declares `MM_*` legacy slots (if still used) plus `ER_*` and published `ER_*_AVG` adaptive AVs for `AspectsAttributes.esp`.
+- Prisma-based replacement for level/attribute allocation UI
+- ER rune/gold cost formula for attribute increases
+- Derived stats recomputation and application to player (HP/MP/SP/CarryWeight + sheet values)
+- Vanilla XP and vanilla level advancement blocking (configurable)
+- Player-only `GetLevel` override option for ER level parity with quest checks
+- Kill-gold reward system with external JSON tuning
+- Perk progression bridge:
+  - perk point parity from ER level delta
+  - auto-unlock by ER level from config rules
+- Public APIs:
+  - C++ plugin API (`RequestPluginAPI`, `ERLS_API.h`)
+  - Papyrus native API (`ERLS.psc`)
+
+## Integration files to package
+
 - `SKSE/Plugins/eldenrimlevelingsystem.ini`
-  - Shipped template for plugin settings (equip-load fractions, reserved tuning keys).
-- `*.md`
-  - Design and system docs (`ASPECTS_ER_SYSTEM_OVERVIEW.md`, `ER_ATTRIBUTE_REBUILD_SPEC.md`, `derived_stats_map.md`, etc.).
+- `SKSE/Plugins/eldenrimlevelingsystem_gold_kill.json`
+- `SKSE/Plugins/eldenrimlevelingsystem_perk_unlocks.json`
+- `SKSE/Plugins/Source/ERLS.psc` (for external Papyrus mods)
+- PrismaUI built assets (see `skse_code/README_SKSE.md`)
 
-## Quick “where do I change X?” map
+## Quick map: where to change what
 
-- **Level-up gold curve**: `leveling_curve.md`, `skse_code/src/Economy.cpp`
-- **ER attributes + allocation UI**: `skse_code/src/Prisma.cpp`, `skse_code/ui/src/App.tsx`
-- **Derived stats + published `*_AVG` AVs**: `skse_code/src/DerivedStats.*`
-- **INI tuning (equip load tiers; future HP/MP tuning keys)**: `SKSE/Plugins/eldenrimlevelingsystem.ini`, `skse_code/src/Config.*`
-- **Custom AV definitions for AVG**: `SKSE/Plugins/ActorValueData/PerkModAttributes_AVG.toml`
+- ER level/gold progression: `skse_code/src/Economy.cpp`, `leveling_curve.md`
+- Attribute allocation flow/UI bridge: `skse_code/src/Prisma.cpp`
+- Derived calculations and snapshots: `skse_code/src/DerivedStats.*`
+- Serialization model: `skse_code/src/Serialization.*`
+- Config parsing: `skse_code/src/Config.*`
+- Perk parity/auto-unlock: `skse_code/src/PerkProgression.*`
+- Public C++ API: `skse_code/src/ERLS_API.h`, `skse_code/src/plugin.cpp`
+- Papyrus API: `skse_code/src/PapyrusAPI.cpp`, `SKSE/Plugins/Source/ERLS.psc`

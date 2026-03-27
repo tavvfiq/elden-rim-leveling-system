@@ -4,6 +4,8 @@
 #include "Economy.h"
 #include "Hooks.h"
 #include "Log.h"
+#include "PapyrusAPI.h"
+#include "PerkProgression.h"
 #include "Prisma.h"
 #include "Serialization.h"
 
@@ -103,6 +105,7 @@ namespace
 			break;
 		case SKSE::MessagingInterface::kDataLoaded:
 			logger::info("SKSE message: kDataLoaded");
+			ER::SyncPerkProgressionFromERLevel();
 			if (ER::Config::EnableGoldKillDrops()) {
 				ER::InstallGoldKillReward();
 			}
@@ -138,6 +141,7 @@ extern "C"
 		ER::Config::Load();
 
 		Persist::Install();
+		ER::Papyrus::Register();
 
 		auto* messaging = SKSE::GetMessagingInterface();
 		if (messaging) {

@@ -50,10 +50,16 @@ You can see exactly how the formula works here. At Level 12, the multiplier inst
 
 ## Integration rule in this project
 
-- There is no separate "Level Up" purchase button.
-- Each attribute `+1` adds one pending level in the allocation UI.
-- On **Confirm**, the plugin:
-  1. Sums rune/gold costs for each pending level step (`L`, `L+1`, `L+2`, ...).
-  2. Charges the total once.
-  3. Applies all pending attribute increases.
-  4. Increments ER Level by the number of confirmed pending points.
+- Attribute increases in Prisma UI are staged as pending deltas.
+- On **Confirm**, plugin:
+  1. Sums gold cost for each pending level step (`L`, `L+1`, `L+2`, ...)
+  2. Spends gold once
+  3. Applies pending attributes to serialized state
+  4. Increments ER level by pending point count
+  5. Recomputes/applies derived stats
+  6. Syncs perk progression (parity + auto-unlock when enabled)
+
+## Code reference
+
+- Cost function: `ER::GoldCostToLevelUp` in `skse_code/src/Economy.cpp`
+- Confirm flow: `OnConfirmAllocation` in `skse_code/src/Prisma.cpp`

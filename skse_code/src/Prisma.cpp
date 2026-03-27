@@ -3,6 +3,7 @@
 #include "Attributes.h"
 #include "DerivedStats.h"
 #include "Economy.h"
+#include "PerkProgression.h"
 #include "PrismaUI_API.h"
 #include "Serialization.h"
 #include "pch.h"
@@ -107,6 +108,7 @@ namespace
 		}
 		Persist::SetERLevel(currentLevel + 1);
 		Persist::SetUnspentPoints(Persist::GetUnspentPoints() + 1);
+		ER::SyncPerkProgressionFromERLevel();
 		Prisma::SendUpdateToUI();
 	}
 
@@ -218,6 +220,7 @@ namespace
 
 		const auto levelAfter = levelBefore + pendingPoints;
 		Persist::SetERLevel(levelAfter);
+		ER::SyncPerkProgressionFromERLevel();
 		ER::ApplyToPlayer(ER::ComputeDerived(committedAttrs), committedAttrs, levelAfter);
 		const auto readbackAttrs = ER::GetAll(player);
 		g_pendingDelta = {};

@@ -7,10 +7,12 @@ namespace
 	constexpr std::uint32_t kUniqueID = 'ASPA';
 	constexpr std::uint32_t kRecord_Unspent = 'UNSP';
 	constexpr std::uint32_t kRecord_ERLevel = 'ERLV';
+	constexpr std::uint32_t kRecord_PerkSyncLevel = 'PRKS';
 	constexpr std::uint32_t kRecord_Attrs = 'ATTR';
 
 	std::int32_t g_unspentPoints = 0;
 	std::int32_t g_erLevel = 1;
+	std::int32_t g_perkSyncLevel = 1;
 	ER::AttributeSet g_attrs{};
 
 	void SkipRecordData(SKSE::SerializationInterface* intfc, std::uint32_t length)
@@ -48,6 +50,13 @@ namespace
 			return;
 		}
 		if (!intfc->WriteRecordData(&g_erLevel, sizeof(g_erLevel))) {
+			return;
+		}
+
+		if (!intfc->OpenRecord(kRecord_PerkSyncLevel, 1)) {
+			return;
+		}
+		if (!intfc->WriteRecordData(&g_perkSyncLevel, sizeof(g_perkSyncLevel))) {
 			return;
 		}
 
@@ -90,6 +99,13 @@ namespace
 				}
 				break;
 			}
+			case kRecord_PerkSyncLevel: {
+				std::int32_t value = 1;
+				if (intfc->ReadRecordData(&value, sizeof(value)) == sizeof(value)) {
+					g_perkSyncLevel = std::max(1, value);
+				}
+				break;
+			}
 			case kRecord_Attrs: {
 				ER::AttributeSet attrs{};
 				if (intfc->ReadRecordData(&attrs.vig, sizeof(attrs.vig)) != sizeof(attrs.vig)) break;
@@ -115,6 +131,7 @@ namespace
 	{
 		g_unspentPoints = 0;
 		g_erLevel = 1;
+		g_perkSyncLevel = 1;
 		g_attrs = {};
 	}
 }
@@ -155,6 +172,16 @@ namespace Persist
 	void SetERLevel(std::int32_t value)
 	{
 		g_erLevel = std::max(1, value);
+	}
+
+	std::int32_t GetPerkSyncLevel()
+	{
+		return g_perkSyncLevel;
+	}
+
+	void SetPerkSyncLevel(std::int32_t value)
+	{
+		g_perkSyncLevel = std::max(1, value);
 	}
 
 	ER::AttributeSet GetAttributes()

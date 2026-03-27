@@ -32,6 +32,8 @@ namespace
 		bool overridePlayerGetLevel{ false };
 		bool disableVanillaXPGain{ false };
 		bool enableGoldKillDrops{ false };
+		bool enablePerkPointParity{ true };
+		bool enablePerkAutoUnlock{ true };
 	};
 
 	Settings g_settings{};
@@ -127,6 +129,10 @@ namespace
 			g_settings.disableVanillaXPGain = b;
 		} else if (keyLower == "enablegoldkilldrops" && ParseBool(value, b)) {
 			g_settings.enableGoldKillDrops = b;
+		} else if (keyLower == "enableperkpointparity" && ParseBool(value, b)) {
+			g_settings.enablePerkPointParity = b;
+		} else if (keyLower == "enableperkautounlock" && ParseBool(value, b)) {
+			g_settings.enablePerkAutoUnlock = b;
 		} else if (keyLower == "hpperlevelgain" && ParseFloat(value, f)) {
 			g_settings.hpPerLevelGain = f;
 		} else if (keyLower == "mpperlevelgain" && ParseFloat(value, f)) {
@@ -291,6 +297,16 @@ namespace ER::Config
 	bool EnableGoldKillDrops() noexcept
 	{
 		return g_settings.enableGoldKillDrops;
+	}
+
+	bool EnablePerkPointParity() noexcept
+	{
+		return g_settings.enablePerkPointParity;
+	}
+
+	bool EnablePerkAutoUnlock() noexcept
+	{
+		return g_settings.enablePerkAutoUnlock;
 	}
 
 }
