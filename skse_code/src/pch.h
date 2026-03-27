@@ -1,6 +1,11 @@
 #pragma once
 
-#include <Windows.h>
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
 
 #include <algorithm>
 #include <cstdint>
@@ -22,3 +27,6 @@
 
 #include <REL/Relocation.h>
 
+#include <Windows.h>
+
+namespace logger = SKSE::log;

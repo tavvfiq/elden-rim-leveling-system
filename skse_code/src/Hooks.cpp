@@ -1,6 +1,8 @@
 #include "Hooks.h"
 
+#include "Config.h"
 #include "Prisma.h"
+#include "Serialization.h"
 #include "pch.h"
 
 namespace
@@ -82,9 +84,12 @@ namespace
 	public:
 		static RE::UI_MESSAGE_RESULTS ProcessMessage_Hook(RE::LevelUpMenu* a_this, RE::UIMessage& a_message)
 		{
+			logger::info("LevelUpMenu::ProcessMessage intercepted");
+
 			auto result = _ProcessMessage(a_this, a_message);
 
 			if (a_message.type == RE::UI_MESSAGE_TYPE::kShow) {
+				logger::info("LevelUpMenu received kShow; forwarding to Prisma");
 				if (a_this && a_this->uiMovie) {
 					a_this->uiMovie->SetVisible(false);
 					RE::GFxValue alpha(0.0);
@@ -95,6 +100,7 @@ namespace
 				Prisma::ShowLevelUp();
 				Prisma::SendUpdateToUI();
 			} else if (a_message.type == RE::UI_MESSAGE_TYPE::kHide) {
+				logger::info("LevelUpMenu received kHide; hiding Prisma");
 				Prisma::SetLevelUpMenuOpen(false);
 				Prisma::Hide();
 				return RE::UI_MESSAGE_RESULTS::kHandled;
@@ -113,6 +119,106 @@ namespace
 	private:
 		static inline REL::Relocation<decltype(ProcessMessage_Hook)> _ProcessMessage;
 	};
+
+	class StatsMenuHook
+	{
+	public:
+		static RE::UI_MESSAGE_RESULTS ProcessMessage_Hook(RE::StatsMenu* a_this, RE::UIMessage& a_message)
+		{
+			if (a_message.type == RE::UI_MESSAGE_TYPE::kShow) {
+				logger::info("StatsMenu received kShow; opening Prisma view");
+				Prisma::ShowLevelUp();
+			} else if (a_message.type == RE::UI_MESSAGE_TYPE::kHide) {
+				logger::info("StatsMenu received kHide; hiding Prisma view");
+				Prisma::Hide();
+			}
+
+			auto result = _ProcessMessage(a_this, a_message);
+
+			if (a_this && a_this->uiMovie) {
+				a_this->uiMovie->SetVisible(false);
+				RE::GFxValue alpha(0.0);
+				a_this->uiMovie->SetVariable("_root._alpha", &alpha);
+			}
+
+			return result;
+		}
+
+		static void Install()
+		{
+			REL::Relocation<std::uintptr_t> vtable(RE::VTABLE_StatsMenu[0]);
+			_ProcessMessage = vtable.write_vfunc(0x4, ProcessMessage_Hook);
+			logger::info("Installed StatsMenu ProcessMessage hook");
+		}
+
+	private:
+		static inline REL::Relocation<decltype(ProcessMessage_Hook)> _ProcessMessage;
+	};
+
+	struct PlayerGetLevelHook
+	{
+		static std::uint16_t thunk(const RE::Actor* a_actor)
+		{
+			const auto* player = RE::PlayerCharacter::GetSingleton();
+			if (!a_actor) {
+				return 1;
+			}
+
+			if (player && a_actor == player) {
+				const auto erLevel = std::max(1, Persist::GetERLevel());
+				return static_cast<std::uint16_t>(std::clamp(erLevel, 1, 65535));
+			}
+
+			// Non-player path: use actor base level directly, avoiding fragile trampoline re-entry.
+			if (const auto* base = a_actor->GetActorBase()) {
+				return base->GetLevel();
+			}
+			return 1;
+		}
+
+		static void Install()
+		{
+			REL::Relocation<std::uintptr_t> target{ RE::Offset::Actor::GetLevel };
+			auto& trampoline = SKSE::GetTrampoline();
+			trampoline.write_branch<5>(target.address(), thunk);
+			logger::info("Installed Actor::GetLevel player override hook");
+		}
+	};
+
+	struct PlayerSkillExperienceHook
+	{
+		static void thunk(RE::PlayerCharacter* a_player, RE::ActorValue a_skill, float a_experience)
+		{
+			(void)a_player;
+			(void)a_skill;
+			(void)a_experience;
+			// Intentionally no-op: blocks vanilla skill XP gain.
+		}
+
+		static void Install()
+		{
+			auto& trampoline = SKSE::GetTrampoline();
+			trampoline.write_branch<5>(RELOCATION_ID(39413, 40488).address(), thunk);
+			logger::info("Installed PlayerCharacter::AddSkillExperience block hook");
+		}
+	};
+
+	struct PlayerAdvanceLevelHook
+	{
+		static void thunk(RE::PlayerCharacter::PlayerSkills* a_skills, bool a_addThreshold)
+		{
+			(void)a_skills;
+			(void)a_addThreshold;
+			// Intentionally no-op: blocks vanilla level advancement path.
+		}
+
+		static void Install()
+		{
+			auto& trampoline = SKSE::GetTrampoline();
+			trampoline.write_branch<5>(RE::Offset::PlayerCharacter::PlayerSkills::AdvanceLevel.address(), thunk);
+			logger::info("Installed PlayerSkills::AdvanceLevel block hook");
+		}
+	};
 }
 
 namespace Hooks
@@ -121,7 +227,15 @@ namespace Hooks
 	{
 		SKSE::AllocTrampoline(64);
 		ProcessInputQueueHook::Install();
+		StatsMenuHook::Install();
 		LevelUpMenuHook::Install();
+		if (ER::Config::OverridePlayerGetLevel()) {
+			PlayerGetLevelHook::Install();
+		}
+		if (ER::Config::DisableVanillaXPGain()) {
+			PlayerSkillExperienceHook::Install();
+			PlayerAdvanceLevelHook::Install();
+		}
 	}
 }
 

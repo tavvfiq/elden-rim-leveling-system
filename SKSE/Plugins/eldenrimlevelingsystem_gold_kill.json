@@ -1,0 +1,11 @@
+{
+  "baseMultiplier": 5.0,
+  "healthWeight": 0.15,
+  "defaultTierMultiplier": 1.0,
+  "contextMultiplier": 1.0,
+  "keywordMultipliers": {
+    "ActorTypeDragon": 10.0,
+    "ActorTypeGiant": 2.5,
+    "ActorTypeBoss": 10.0
+  }
+}

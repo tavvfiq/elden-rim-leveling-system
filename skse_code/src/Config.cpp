@@ -29,6 +29,9 @@ namespace
 		float magicResistGain{ 1.5f };
 		float diseaseResistGain{ 1.5f };
 		float poisonResistGain{ 1.5f };
+		bool overridePlayerGetLevel{ false };
+		bool disableVanillaXPGain{ false };
+		bool enableGoldKillDrops{ false };
 	};
 
 	Settings g_settings{};
@@ -80,10 +83,26 @@ namespace
 		}
 	}
 
+	bool ParseBool(std::string_view sv, bool& out)
+	{
+		auto s = ToLower(std::string{ sv });
+		TrimInPlace(s);
+		if (s == "1" || s == "true" || s == "yes" || s == "on") {
+			out = true;
+			return true;
+		}
+		if (s == "0" || s == "false" || s == "no" || s == "off") {
+			out = false;
+			return true;
+		}
+		return false;
+	}
+
 	void ApplyKeyValue(const std::string& sectionLower, const std::string& keyLower, std::string value)
 	{
 		TrimInPlace(value);
 		float f = 0.0f;
+		bool b = false;
 
 		if (sectionLower == "equpload") {
 			if (keyLower == "lightfraction" || keyLower == "light") {
@@ -102,7 +121,13 @@ namespace
 			return;
 		}
 
-		if (keyLower == "hpperlevelgain" && ParseFloat(value, f)) {
+		if (keyLower == "overrideplayergetlevel" && ParseBool(value, b)) {
+			g_settings.overridePlayerGetLevel = b;
+		} else if (keyLower == "disablevanillaxpgain" && ParseBool(value, b)) {
+			g_settings.disableVanillaXPGain = b;
+		} else if (keyLower == "enablegoldkilldrops" && ParseBool(value, b)) {
+			g_settings.enableGoldKillDrops = b;
+		} else if (keyLower == "hpperlevelgain" && ParseFloat(value, f)) {
 			g_settings.hpPerLevelGain = f;
 		} else if (keyLower == "mpperlevelgain" && ParseFloat(value, f)) {
 			g_settings.mpPerLevelGain = f;
@@ -252,4 +277,20 @@ namespace ER::Config
 	{
 		return g_settings.poisonResistGain;
 	}
+
+	bool OverridePlayerGetLevel() noexcept
+	{
+		return g_settings.overridePlayerGetLevel;
+	}
+
+	bool DisableVanillaXPGain() noexcept
+	{
+		return g_settings.disableVanillaXPGain;
+	}
+
+	bool EnableGoldKillDrops() noexcept
+	{
+		return g_settings.enableGoldKillDrops;
+	}
+
 }

@@ -8,5 +8,8 @@ namespace ER
 	// Gold is formID 0x0000000F.
 	std::int32_t GetPlayerGold();
 	bool TrySpendPlayerGold(std::int32_t amount);
+
+	// Optional kill reward system (gold as runes).
+	void InstallGoldKillReward();
 }
 

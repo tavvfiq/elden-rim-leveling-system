@@ -10,7 +10,7 @@ add_rules("mode.debug", "mode.releasedbg")
 set_defaultmode("releasedbg")
 
 -- TODO: make this path configurable/relative
-includes("/Users/taufiq.nugroho/Documents/Projects/skyrim/CommonLibSSE-NG")
+includes("D:/Modding/CommonLibSSE-NG")
 
 add_requires("nlohmann_json")
 

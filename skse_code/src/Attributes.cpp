@@ -1,65 +1,55 @@
 #include "Attributes.h"
 
+#include "Serialization.h"
 #include "pch.h"
 
 namespace ER
 {
 	RE::ActorValue ResolveActorValue(Attribute a)
 	{
-		const auto name = ToAVName(a);
-		if (name.empty()) {
-			return RE::ActorValue::kNone;
-		}
-
-		auto* list = RE::ActorValueList::GetSingleton();
-		if (!list) {
-			return RE::ActorValue::kNone;
-		}
-
-		return list->LookupActorValueByName(name);
+		(void)a;
+		return RE::ActorValue::kNone;
 	}
 
 	std::int32_t Get(RE::Actor* actor, Attribute a)
 	{
-		if (!actor) {
-			return 0;
+		(void)actor;
+		const auto attrs = Persist::GetAttributes();
+		switch (a) {
+		case Attribute::VIG: return attrs.vig;
+		case Attribute::MND: return attrs.mnd;
+		case Attribute::END: return attrs.end;
+		case Attribute::STR: return attrs.str;
+		case Attribute::DEX: return attrs.dex;
+		case Attribute::INT: return attrs.intl;
+		case Attribute::FTH: return attrs.fth;
+		case Attribute::ARC: return attrs.arc;
 		}
-
-		const auto av = ResolveActorValue(a);
-		if (av == RE::ActorValue::kNone) {
-			return 0;
-		}
-
-		const float value = actor->AsActorValueOwner()->GetBaseActorValue(av);
-		return static_cast<std::int32_t>(std::lround(value));
+		return 0;
 	}
 
 	void Set(RE::Actor* actor, Attribute a, std::int32_t value)
 	{
-		if (!actor) {
-			return;
+		(void)actor;
+		auto attrs = Persist::GetAttributes();
+		value = std::max(0, value);
+		switch (a) {
+		case Attribute::VIG: attrs.vig = value; break;
+		case Attribute::MND: attrs.mnd = value; break;
+		case Attribute::END: attrs.end = value; break;
+		case Attribute::STR: attrs.str = value; break;
+		case Attribute::DEX: attrs.dex = value; break;
+		case Attribute::INT: attrs.intl = value; break;
+		case Attribute::FTH: attrs.fth = value; break;
+		case Attribute::ARC: attrs.arc = value; break;
 		}
-
-		const auto av = ResolveActorValue(a);
-		if (av == RE::ActorValue::kNone) {
-			return;
-		}
-
-		actor->AsActorValueOwner()->SetBaseActorValue(av, static_cast<float>(value));
+		Persist::SetAttributes(attrs);
 	}
 
 	AttributeSet GetAll(RE::Actor* actor)
 	{
-		AttributeSet set;
-		set.vig = Get(actor, Attribute::VIG);
-		set.mnd = Get(actor, Attribute::MND);
-		set.end = Get(actor, Attribute::END);
-		set.str = Get(actor, Attribute::STR);
-		set.dex = Get(actor, Attribute::DEX);
-		set.intl = Get(actor, Attribute::INT);
-		set.fth = Get(actor, Attribute::FTH);
-		set.arc = Get(actor, Attribute::ARC);
-		return set;
+		(void)actor;
+		return Persist::GetAttributes();
 	}
 
 	std::int32_t PointsSpent(const AttributeSet& set)

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Attributes.h"
+
 namespace Persist
 {
 	void Install();
@@ -9,5 +11,8 @@ namespace Persist
 
 	std::int32_t GetERLevel();
 	void SetERLevel(std::int32_t value);
+
+	ER::AttributeSet GetAttributes();
+	void SetAttributes(const ER::AttributeSet& value);
 }
 

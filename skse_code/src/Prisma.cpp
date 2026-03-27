@@ -17,175 +17,280 @@ namespace
 	bool g_levelUpMenuOpen{ false };
 	ER::AttributeSet g_pendingDelta{};
 
-	constexpr const char* kViewPath =
-#ifdef DEV_SERVER
-		"http://localhost:5173";
-#else
-		"AspectsAttributes/index.html";
-#endif
+	std::optional<ER::Attribute> ParseAttr(const char* args)
+	{
+		if (!args) {
+			return std::nullopt;
+		}
+		try {
+			const auto j = json::parse(args);
+			const auto key = j.value("attr", std::string{});
+			if (key == "vig") return ER::Attribute::VIG;
+			if (key == "mnd") return ER::Attribute::MND;
+			if (key == "end") return ER::Attribute::END;
+			if (key == "str") return ER::Attribute::STR;
+			if (key == "dex") return ER::Attribute::DEX;
+			if (key == "int") return ER::Attribute::INT;
+			if (key == "fth") return ER::Attribute::FTH;
+			if (key == "arc") return ER::Attribute::ARC;
+		} catch (...) {
+		}
+		return std::nullopt;
+	}
+
+	void AddPending(ER::Attribute a, std::int32_t delta)
+	{
+		switch (a) {
+		case ER::Attribute::VIG: g_pendingDelta.vig += delta; break;
+		case ER::Attribute::MND: g_pendingDelta.mnd += delta; break;
+		case ER::Attribute::END: g_pendingDelta.end += delta; break;
+		case ER::Attribute::STR: g_pendingDelta.str += delta; break;
+		case ER::Attribute::DEX: g_pendingDelta.dex += delta; break;
+		case ER::Attribute::INT: g_pendingDelta.intl += delta; break;
+		case ER::Attribute::FTH: g_pendingDelta.fth += delta; break;
+		case ER::Attribute::ARC: g_pendingDelta.arc += delta; break;
+		}
+	}
+
+	std::int32_t GetPending(ER::Attribute a)
+	{
+		switch (a) {
+		case ER::Attribute::VIG: return g_pendingDelta.vig;
+		case ER::Attribute::MND: return g_pendingDelta.mnd;
+		case ER::Attribute::END: return g_pendingDelta.end;
+		case ER::Attribute::STR: return g_pendingDelta.str;
+		case ER::Attribute::DEX: return g_pendingDelta.dex;
+		case ER::Attribute::INT: return g_pendingDelta.intl;
+		case ER::Attribute::FTH: return g_pendingDelta.fth;
+		case ER::Attribute::ARC: return g_pendingDelta.arc;
+		}
+		return 0;
+	}
+
+	std::int32_t GetPendingPointCount()
+	{
+		return ER::PointsSpent(g_pendingDelta);
+	}
+
+	std::int32_t GetPendingGoldCost(std::int32_t baseLevel, std::int32_t pendingPoints)
+	{
+		baseLevel = std::max(1, baseLevel);
+		pendingPoints = std::max(0, pendingPoints);
+
+		std::int64_t total = 0;
+		for (std::int32_t i = 0; i < pendingPoints; ++i) {
+			total += static_cast<std::int64_t>(ER::GoldCostToLevelUp(baseLevel + i));
+		}
+		return static_cast<std::int32_t>(std::min<std::int64_t>(total, std::numeric_limits<std::int32_t>::max()));
+	}
+
+
+	void OnRequestInitState(const char*)
+	{
+		Prisma::SendUpdateToUI();
+	}
+
+	void OnLevelUp(const char*)
+	{
+		const auto currentLevel = Persist::GetERLevel();
+		const auto cost = ER::GoldCostToLevelUp(currentLevel);
+		if (!ER::TrySpendPlayerGold(cost)) {
+			Prisma::SendUpdateToUI();
+			return;
+		}
+		Persist::SetERLevel(currentLevel + 1);
+		Persist::SetUnspentPoints(Persist::GetUnspentPoints() + 1);
+		Prisma::SendUpdateToUI();
+	}
+
+	void OnAllocatePoint(const char* args)
+	{
+		const auto optAttr = ParseAttr(args);
+		if (!optAttr) {
+			return;
+		}
+
+		const auto level = Persist::GetERLevel();
+		const auto pendingBefore = GetPendingPointCount();
+		const auto pendingAfter = pendingBefore + 1;
+		const auto totalPendingCost = GetPendingGoldCost(level, pendingAfter);
+		const auto gold = ER::GetPlayerGold();
+		if (gold < totalPendingCost) {
+			logger::info(
+				"Allocate blocked: level={}, pending_before={}, pending_after={}, gold={}, total_pending_cost={}",
+				level,
+				pendingBefore,
+				pendingAfter,
+				gold,
+				totalPendingCost);
+			Prisma::SendUpdateToUI();
+			return;
+		}
+
+		AddPending(*optAttr, 1);
+		logger::info("Allocate ok: pending_points={} total_pending_cost={}", GetPendingPointCount(), totalPendingCost);
+		Prisma::SendUpdateToUI();
+	}
+
+	void OnRefundPoint(const char* args)
+	{
+		const auto optAttr = ParseAttr(args);
+		if (!optAttr) {
+			return;
+		}
+
+		const auto existing = GetPending(*optAttr);
+		if (existing <= 0) {
+			return;
+		}
+
+		AddPending(*optAttr, -1);
+		logger::info("Refund ok: pending_points={}", GetPendingPointCount());
+		Prisma::SendUpdateToUI();
+	}
+
+	void OnConfirmAllocation(const char*)
+	{
+		auto* player = RE::PlayerCharacter::GetSingleton();
+		if (!player) {
+			return;
+		}
+
+		const auto pendingPoints = GetPendingPointCount();
+		if (pendingPoints <= 0) {
+			logger::info("Confirm ignored: pending_points=0");
+			return;
+		}
+
+		const auto levelBefore = Persist::GetERLevel();
+		const auto totalPendingCost = GetPendingGoldCost(levelBefore, pendingPoints);
+		const auto goldBefore = ER::GetPlayerGold();
+		logger::info(
+			"Confirm requested: level_before={}, pending_points={}, gold_before={}, total_pending_cost={}",
+			levelBefore,
+			pendingPoints,
+			goldBefore,
+			totalPendingCost);
+		if (!ER::TrySpendPlayerGold(totalPendingCost)) {
+			logger::warn(
+				"Confirm failed spending gold: level_before={}, pending_points={}, gold_before={}, total_pending_cost={}",
+				levelBefore,
+				pendingPoints,
+				goldBefore,
+				totalPendingCost);
+			Prisma::SendUpdateToUI();
+			return;
+		}
+
+		auto committedAttrs = ER::GetAll(player);
+
+		auto setAttr = [&](ER::Attribute a, std::int32_t delta) {
+			if (delta <= 0) return;
+			std::int32_t target = 0;
+			switch (a) {
+			case ER::Attribute::VIG: committedAttrs.vig += delta; target = committedAttrs.vig; break;
+			case ER::Attribute::MND: committedAttrs.mnd += delta; target = committedAttrs.mnd; break;
+			case ER::Attribute::END: committedAttrs.end += delta; target = committedAttrs.end; break;
+			case ER::Attribute::STR: committedAttrs.str += delta; target = committedAttrs.str; break;
+			case ER::Attribute::DEX: committedAttrs.dex += delta; target = committedAttrs.dex; break;
+			case ER::Attribute::INT: committedAttrs.intl += delta; target = committedAttrs.intl; break;
+			case ER::Attribute::FTH: committedAttrs.fth += delta; target = committedAttrs.fth; break;
+			case ER::Attribute::ARC: committedAttrs.arc += delta; target = committedAttrs.arc; break;
+			}
+			ER::Set(player, a, target);
+		};
+
+		setAttr(ER::Attribute::VIG, g_pendingDelta.vig);
+		setAttr(ER::Attribute::MND, g_pendingDelta.mnd);
+		setAttr(ER::Attribute::END, g_pendingDelta.end);
+		setAttr(ER::Attribute::STR, g_pendingDelta.str);
+		setAttr(ER::Attribute::DEX, g_pendingDelta.dex);
+		setAttr(ER::Attribute::INT, g_pendingDelta.intl);
+		setAttr(ER::Attribute::FTH, g_pendingDelta.fth);
+		setAttr(ER::Attribute::ARC, g_pendingDelta.arc);
+
+		const auto levelAfter = levelBefore + pendingPoints;
+		Persist::SetERLevel(levelAfter);
+		ER::ApplyToPlayer(ER::ComputeDerived(committedAttrs), committedAttrs, levelAfter);
+		const auto readbackAttrs = ER::GetAll(player);
+		g_pendingDelta = {};
+		logger::info(
+			"Confirm applied: level_after={} stored_level={} vanilla_level={} attrs_target(vig,mnd,end,str,dex,int,fth,arc)=({},{},{},{},{},{},{},{}) attrs_readback=({},{},{},{},{},{},{},{}) pending_cleared=1",
+			levelAfter,
+			Persist::GetERLevel(),
+			player->GetLevel(),
+			committedAttrs.vig,
+			committedAttrs.mnd,
+			committedAttrs.end,
+			committedAttrs.str,
+			committedAttrs.dex,
+			committedAttrs.intl,
+			committedAttrs.fth,
+			committedAttrs.arc,
+			readbackAttrs.vig,
+			readbackAttrs.mnd,
+			readbackAttrs.end,
+			readbackAttrs.str,
+			readbackAttrs.dex,
+			readbackAttrs.intl,
+			readbackAttrs.fth,
+			readbackAttrs.arc);
+		Prisma::SendUpdateToUI();
+	}
+
+	void OnCancelAllocation(const char*)
+	{
+		g_pendingDelta = {};
+		Prisma::Hide();
+		auto msgQueue = RE::UIMessageQueue::GetSingleton();
+		if (msgQueue) {
+			msgQueue->AddMessage(RE::StatsMenu::MENU_NAME, RE::UI_MESSAGE_TYPE::kHide, nullptr);
+			msgQueue->AddMessage(RE::LevelUpMenu::MENU_NAME, RE::UI_MESSAGE_TYPE::kHide, nullptr);
+		}
+	}
+
+	void OnHideWindow(const char*)
+	{
+		Prisma::Hide();
+		auto msgQueue = RE::UIMessageQueue::GetSingleton();
+		if (msgQueue) {
+			msgQueue->AddMessage(RE::LevelUpMenu::MENU_NAME, RE::UI_MESSAGE_TYPE::kHide, nullptr);
+		}
+	}
+
+	void OnBack(const char*)
+	{
+		Prisma::Hide();
+	}
+
+	constexpr const char* kViewPath = "EldenRimLevelingSystem/index.html";
 
 	void RegisterListeners(PrismaView view)
 	{
-		auto parseAttr = [](const char* args) -> std::optional<ER::Attribute> {
-			if (!args) {
-				return std::nullopt;
-			}
-			try {
-				const auto j = json::parse(args);
-				const auto key = j.value("attr", std::string{});
-				if (key == "vig") return ER::Attribute::VIG;
-				if (key == "mnd") return ER::Attribute::MND;
-				if (key == "end") return ER::Attribute::END;
-				if (key == "str") return ER::Attribute::STR;
-				if (key == "dex") return ER::Attribute::DEX;
-				if (key == "int") return ER::Attribute::INT;
-				if (key == "fth") return ER::Attribute::FTH;
-				if (key == "arc") return ER::Attribute::ARC;
-			} catch (...) {
-			}
-			return std::nullopt;
-		};
-
-		auto addPending = [](ER::Attribute a, std::int32_t delta) {
-			switch (a) {
-			case ER::Attribute::VIG: g_pendingDelta.vig += delta; break;
-			case ER::Attribute::MND: g_pendingDelta.mnd += delta; break;
-			case ER::Attribute::END: g_pendingDelta.end += delta; break;
-			case ER::Attribute::STR: g_pendingDelta.str += delta; break;
-			case ER::Attribute::DEX: g_pendingDelta.dex += delta; break;
-			case ER::Attribute::INT: g_pendingDelta.intl += delta; break;
-			case ER::Attribute::FTH: g_pendingDelta.fth += delta; break;
-			case ER::Attribute::ARC: g_pendingDelta.arc += delta; break;
-			}
-		};
-
-		auto getPending = [](ER::Attribute a) -> std::int32_t {
-			switch (a) {
-			case ER::Attribute::VIG: return g_pendingDelta.vig;
-			case ER::Attribute::MND: return g_pendingDelta.mnd;
-			case ER::Attribute::END: return g_pendingDelta.end;
-			case ER::Attribute::STR: return g_pendingDelta.str;
-			case ER::Attribute::DEX: return g_pendingDelta.dex;
-			case ER::Attribute::INT: return g_pendingDelta.intl;
-			case ER::Attribute::FTH: return g_pendingDelta.fth;
-			case ER::Attribute::ARC: return g_pendingDelta.arc;
-			}
-			return 0;
-		};
-
-		g_prismaUI->RegisterJSListener(view, "requestInitState", [](const char*) {
-			Prisma::SendUpdateToUI();
-		});
-
-		g_prismaUI->RegisterJSListener(view, "levelUp", [](const char*) {
-			const auto currentLevel = Persist::GetERLevel();
-			const auto cost = ER::GoldCostToLevelUp(currentLevel);
-			if (!ER::TrySpendPlayerGold(cost)) {
-				Prisma::SendUpdateToUI();
-				return;
-			}
-			Persist::SetERLevel(currentLevel + 1);
-			Persist::SetUnspentPoints(Persist::GetUnspentPoints() + 1);
-			Prisma::SendUpdateToUI();
-		});
-
-		g_prismaUI->RegisterJSListener(view, "allocatePoint", [parseAttr, addPending](const char* args) {
-			const auto optAttr = parseAttr(args);
-			if (!optAttr) {
-				return;
-			}
-
-			const auto unspent = Persist::GetUnspentPoints();
-			if (unspent <= 0) {
-				return;
-			}
-
-			addPending(*optAttr, 1);
-			Persist::SetUnspentPoints(unspent - 1);
-			Prisma::SendUpdateToUI();
-		});
-
-		g_prismaUI->RegisterJSListener(view, "refundPoint", [parseAttr, addPending, getPending](const char* args) {
-			const auto optAttr = parseAttr(args);
-			if (!optAttr) {
-				return;
-			}
-
-			const auto existing = getPending(*optAttr);
-			if (existing <= 0) {
-				return;
-			}
-
-			addPending(*optAttr, -1);
-			Persist::SetUnspentPoints(Persist::GetUnspentPoints() + 1);
-			Prisma::SendUpdateToUI();
-		});
-
-		g_prismaUI->RegisterJSListener(view, "confirmAllocation", [](const char*) {
-			auto* player = RE::PlayerCharacter::GetSingleton();
-			if (!player) {
-				return;
-			}
-
-			if (ER::PointsSpent(g_pendingDelta) <= 0) {
-				return;
-			}
-
-			// Commit: write AVs.
-			auto setAttr = [&](ER::Attribute a, std::int32_t delta) {
-				if (delta <= 0) return;
-				const auto current = ER::Get(player, a);
-				ER::Set(player, a, current + delta);
-			};
-
-			setAttr(ER::Attribute::VIG, g_pendingDelta.vig);
-			setAttr(ER::Attribute::MND, g_pendingDelta.mnd);
-			setAttr(ER::Attribute::END, g_pendingDelta.end);
-			setAttr(ER::Attribute::STR, g_pendingDelta.str);
-			setAttr(ER::Attribute::DEX, g_pendingDelta.dex);
-			setAttr(ER::Attribute::INT, g_pendingDelta.intl);
-			setAttr(ER::Attribute::FTH, g_pendingDelta.fth);
-			setAttr(ER::Attribute::ARC, g_pendingDelta.arc);
-
-			// Recompute derived stats and apply.
-			ER::ApplyToPlayer(ER::ComputeDerived(ER::GetAll(player)));
-
-			// Clear pending.
-			g_pendingDelta = {};
-
-			Prisma::SendUpdateToUI();
-		});
-
-		g_prismaUI->RegisterJSListener(view, "cancelAllocation", [](const char*) {
-			// Refund unspent points for all pending allocations.
-			Persist::SetUnspentPoints(Persist::GetUnspentPoints() + ER::PointsSpent(g_pendingDelta));
-			g_pendingDelta = {};
-			Prisma::Hide();
-		});
-
-		g_prismaUI->RegisterJSListener(view, "hideWindow", [](const char*) {
-			Prisma::Hide();
-			auto msgQueue = RE::UIMessageQueue::GetSingleton();
-			if (msgQueue) {
-				msgQueue->AddMessage(RE::LevelUpMenu::MENU_NAME, RE::UI_MESSAGE_TYPE::kHide, nullptr);
-			}
-		});
-
-		g_prismaUI->RegisterJSListener(view, "back", [](const char*) {
-			Prisma::Hide();
-		});
+		g_prismaUI->RegisterJSListener(view, "requestInitState", &OnRequestInitState);
+		g_prismaUI->RegisterJSListener(view, "levelUp", &OnLevelUp);
+		g_prismaUI->RegisterJSListener(view, "allocatePoint", &OnAllocatePoint);
+		g_prismaUI->RegisterJSListener(view, "refundPoint", &OnRefundPoint);
+		g_prismaUI->RegisterJSListener(view, "confirmAllocation", &OnConfirmAllocation);
+		g_prismaUI->RegisterJSListener(view, "cancelAllocation", &OnCancelAllocation);
+		g_prismaUI->RegisterJSListener(view, "hideWindow", &OnHideWindow);
+		g_prismaUI->RegisterJSListener(view, "back", &OnBack);
 	}
 
 	std::string BuildStateJSON()
 	{
-		auto* player = RE::PlayerCharacter::GetSingleton();
-		const auto attrs = ER::GetAll(player);
+		const auto current = ER::GetCurrentStatsSnapshot();
+		const auto attrs = current.attrs;
 		const auto spent = ER::PointsSpent(attrs);
-		const auto level = Persist::GetERLevel();
-		const auto unspent = Persist::GetUnspentPoints();
+		const auto level = current.erLevel;
+		const auto pendingPoints = GetPendingPointCount();
 		const auto levelUpCost = ER::GoldCostToLevelUp(level);
+		const auto nextLevelUpCost = ER::GoldCostToLevelUp(level + pendingPoints);
+		const auto pendingCost = GetPendingGoldCost(level, pendingPoints);
 		const auto gold = ER::GetPlayerGold();
 		const bool canLevelUp = gold >= levelUpCost;
+		const bool canAllocate = gold >= GetPendingGoldCost(level, pendingPoints + 1);
+		const bool canConfirm = pendingPoints > 0 && gold >= pendingCost;
 
 		// For arrow displays we compute a “pending” derived set.
 		auto pendingAttrs = attrs;
@@ -198,11 +303,7 @@ namespace
 		pendingAttrs.fth += g_pendingDelta.fth;
 		pendingAttrs.arc += g_pendingDelta.arc;
 
-		const auto derived = ER::ComputeDerived(attrs);
-		const auto derivedPending = ER::ComputeDerived(pendingAttrs);
-
-		const auto sheet = ER::ComputePublishedSheetAVGs(attrs, level, derived);
-		const auto sheetPending = ER::ComputePublishedSheetAVGs(pendingAttrs, level, derivedPending);
+		const auto pendingSnapshot = ER::BuildStatsSnapshot(pendingAttrs, level);
 
 		json j;
 		j["ready"] = true;
@@ -217,8 +318,16 @@ namespace
 			{ "fth", attrs.fth },
 			{ "arc", attrs.arc },
 		};
-		j["points"] = { { "spent", spent }, { "level", level }, { "unspent", unspent } };
-		j["gold"] = { { "current", gold }, { "levelUpCost", levelUpCost }, { "canLevelUp", canLevelUp } };
+		j["points"] = { { "spent", spent }, { "level", level }, { "pending", pendingPoints } };
+		j["gold"] = {
+			{ "current", gold },
+			{ "levelUpCost", levelUpCost },
+			{ "nextLevelUpCost", nextLevelUpCost },
+			{ "pendingCost", pendingCost },
+			{ "canLevelUp", canLevelUp },
+			{ "canAllocate", canAllocate },
+			{ "canConfirm", canConfirm }
+		};
 		j["pending"] = {
 			{ "attributes",
 				{
@@ -233,63 +342,63 @@ namespace
 				} },
 		};
 		j["derived"] = {
-			{ "maxHP", derived.maxHP },
-			{ "maxMP", derived.maxMP },
-			{ "maxSP", derived.maxSP },
-			{ "carryWeight", derived.carryWeight },
+			{ "maxHP", current.derived.maxHP },
+			{ "maxMP", current.derived.maxMP },
+			{ "maxSP", current.derived.maxSP },
+			{ "carryWeight", current.derived.carryWeight },
 			{ "defense",
 				{
-					{ "physical", sheet.l1Phys },
-					{ "magic", sheet.l1Magic },
-					{ "fire", sheet.l1Fire },
-					{ "lightning", sheet.l1Lightning },
-					{ "frost", sheet.l1Frost },
-					{ "poison", sheet.l1Poison },
+					{ "physical", current.sheet.l1Phys },
+					{ "magic", current.sheet.l1Magic },
+					{ "fire", current.sheet.l1Fire },
+					{ "lightning", current.sheet.l1Lightning },
+					{ "frost", current.sheet.l1Frost },
+					{ "poison", current.sheet.l1Poison },
 				} },
 			{ "thresholds",
 				{
-					{ "immunity", sheet.thImmunity },
-					{ "robustness", sheet.thRobustness },
-					{ "focus", sheet.thFocus },
-					{ "vitality", sheet.thVitality },
-					{ "madness", sheet.thMadness },
+					{ "immunity", current.sheet.thImmunity },
+					{ "robustness", current.sheet.thRobustness },
+					{ "focus", current.sheet.thFocus },
+					{ "vitality", current.sheet.thVitality },
+					{ "madness", current.sheet.thMadness },
 				} },
 			{ "equipLoad",
 				{
-					{ "max", sheet.equipLoadMax },
-					{ "light", sheet.equipLoadLight },
-					{ "medium", sheet.equipLoadMedium },
-					{ "heavy", sheet.equipLoadHeavy },
+					{ "max", current.sheet.equipLoadMax },
+					{ "light", current.sheet.equipLoadLight },
+					{ "medium", current.sheet.equipLoadMedium },
+					{ "heavy", current.sheet.equipLoadHeavy },
 				} },
 		};
 		j["derivedPending"] = {
-			{ "maxHP", derivedPending.maxHP },
-			{ "maxMP", derivedPending.maxMP },
-			{ "maxSP", derivedPending.maxSP },
-			{ "carryWeight", derivedPending.carryWeight },
+			{ "maxHP", pendingSnapshot.derived.maxHP },
+			{ "maxMP", pendingSnapshot.derived.maxMP },
+			{ "maxSP", pendingSnapshot.derived.maxSP },
+			{ "carryWeight", pendingSnapshot.derived.carryWeight },
 			{ "defense",
 				{
-					{ "physical", sheetPending.l1Phys },
-					{ "magic", sheetPending.l1Magic },
-					{ "fire", sheetPending.l1Fire },
-					{ "lightning", sheetPending.l1Lightning },
-					{ "frost", sheetPending.l1Frost },
-					{ "poison", sheetPending.l1Poison },
+					{ "physical", pendingSnapshot.sheet.l1Phys },
+					{ "magic", pendingSnapshot.sheet.l1Magic },
+					{ "fire", pendingSnapshot.sheet.l1Fire },
+					{ "lightning", pendingSnapshot.sheet.l1Lightning },
+					{ "frost", pendingSnapshot.sheet.l1Frost },
+					{ "poison", pendingSnapshot.sheet.l1Poison },
 				} },
 			{ "thresholds",
 				{
-					{ "immunity", sheetPending.thImmunity },
-					{ "robustness", sheetPending.thRobustness },
-					{ "focus", sheetPending.thFocus },
-					{ "vitality", sheetPending.thVitality },
-					{ "madness", sheetPending.thMadness },
+					{ "immunity", pendingSnapshot.sheet.thImmunity },
+					{ "robustness", pendingSnapshot.sheet.thRobustness },
+					{ "focus", pendingSnapshot.sheet.thFocus },
+					{ "vitality", pendingSnapshot.sheet.thVitality },
+					{ "madness", pendingSnapshot.sheet.thMadness },
 				} },
 			{ "equipLoad",
 				{
-					{ "max", sheetPending.equipLoadMax },
-					{ "light", sheetPending.equipLoadLight },
-					{ "medium", sheetPending.equipLoadMedium },
-					{ "heavy", sheetPending.equipLoadHeavy },
+					{ "max", pendingSnapshot.sheet.equipLoadMax },
+					{ "light", pendingSnapshot.sheet.equipLoadLight },
+					{ "medium", pendingSnapshot.sheet.equipLoadMedium },
+					{ "heavy", pendingSnapshot.sheet.equipLoadHeavy },
 				} },
 		};
 		return j.dump();
@@ -326,15 +435,19 @@ namespace Prisma
 			logger::warn("ShowLevelUp called before Prisma::Install");
 			return;
 		}
+		logger::info("ShowLevelUp called (createdView={}, view={})", g_createdView, g_view);
 
 		if (!g_createdView) {
 			g_createdView = true;
 			logger::info("Creating PrismaUI view: {}", kViewPath);
 			g_view = g_prismaUI->CreateView(kViewPath, [](PrismaView currentView) {
+				logger::info("PrismaUI view DOM ready (view={})", currentView);
 				RegisterListeners(currentView);
+				g_prismaUI->Show(currentView);
 				Prisma::SendUpdateToUI();
 				g_prismaUI->Focus(currentView, true);
 			});
+			logger::info("CreateView returned view={}", g_view);
 			return;
 		}
 

@@ -33,7 +33,17 @@ namespace ER
 		float equipLoadHeavy{};
 	};
 
+	struct StatsSnapshot
+	{
+		AttributeSet attrs{};
+		std::int32_t erLevel{ 1 };
+		DerivedStats derived{};
+		PublishedSheetAVGs sheet{};
+	};
+
 	PublishedSheetAVGs ComputePublishedSheetAVGs(const AttributeSet& attrs, std::int32_t erLevel, const DerivedStats& derived);
+	StatsSnapshot BuildStatsSnapshot(const AttributeSet& attrs, std::int32_t erLevel);
+	StatsSnapshot GetCurrentStatsSnapshot();
 
 	// Initial, placeholder “ER-like” softcap curves.
 	// We can replace coefficients later to match ER precisely.
@@ -44,5 +54,6 @@ namespace ER
 
 	DerivedStats ComputeDerived(const AttributeSet& attrs);
 	void ApplyToPlayer(const DerivedStats& stats);
+	void ApplyToPlayer(const DerivedStats& stats, const AttributeSet& attrs, std::int32_t erLevel);
 }
 

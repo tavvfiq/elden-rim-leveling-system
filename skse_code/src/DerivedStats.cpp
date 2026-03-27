@@ -7,34 +7,6 @@
 
 namespace
 {
-	RE::ActorValue ResolveActorValueByName(std::string_view name)
-	{
-		if (name.empty()) {
-			return RE::ActorValue::kNone;
-		}
-
-		auto* list = RE::ActorValueList::GetSingleton();
-		if (!list) {
-			return RE::ActorValue::kNone;
-		}
-
-		return list->LookupActorValueByName(name);
-	}
-
-	void SetBaseByName(RE::Actor* actor, std::string_view name, float value)
-	{
-		if (!actor) {
-			return;
-		}
-
-		const auto av = ResolveActorValueByName(name);
-		if (av == RE::ActorValue::kNone) {
-			return;
-		}
-
-		actor->AsActorValueOwner()->SetBaseActorValue(av, value);
-	}
-
 	// Simple piecewise linear curve helper.
 	std::int32_t Piecewise(
 		std::int32_t x,
@@ -62,6 +34,93 @@ namespace
 		}
 
 		return value;
+	}
+
+	float PiecewiseFloat(
+		std::int32_t x,
+		std::initializer_list<std::pair<std::int32_t, float>> segments)
+	{
+		x = std::max(0, x);
+		float value = 0.0f;
+		std::int32_t prevCap = 0;
+		for (auto [cap, slope] : segments) {
+			const std::int32_t start = prevCap + 1;
+			const std::int32_t end = cap;
+			if (x < start) {
+				break;
+			}
+			const std::int32_t used = std::min(x, end) - start + 1;
+			value += static_cast<float>(used) * slope;
+			prevCap = cap;
+			if (x <= cap) {
+				break;
+			}
+		}
+		return value;
+	}
+
+	float ComputeLayer1LevelIncrement(std::int32_t level)
+	{
+		// Global defensive growth from Rune Level.
+		const std::int32_t l = std::max(1, level);
+		const std::int32_t seg1 = std::max(0, std::min(l, 71) - 1);    // levels 2..71
+		const std::int32_t seg2 = std::max(0, std::min(l, 91) - 71);   // levels 72..91
+		const std::int32_t seg3 = std::max(0, std::min(l, 161) - 91);  // levels 92..161
+		const std::int32_t seg4 = std::max(0, std::min(l, 713) - 161); // levels 162..713
+		return static_cast<float>(seg1) * 0.40f +
+		       static_cast<float>(seg2) * 1.00f +
+		       static_cast<float>(seg3) * 0.21f +
+		       static_cast<float>(seg4) * 0.03f;
+	}
+
+	float ComputePhysicalDefenseFromSTR(std::int32_t str)
+	{
+		return PiecewiseFloat(str, {
+			{ 30, 0.33f },
+			{ 40, 0.50f },
+			{ 60, 0.75f },
+			{ 99, 0.25f },
+		});
+	}
+
+	float ComputeFireDefenseFromVIG(std::int32_t vig)
+	{
+		return PiecewiseFloat(vig, {
+			{ 30, 0.66f },
+			{ 40, 2.00f },
+			{ 60, 1.00f },
+			{ 99, 0.25f },
+		});
+	}
+
+	float ComputeMagicDefenseFromINT(std::int32_t intl)
+	{
+		return PiecewiseFloat(intl, {
+			{ 20, 2.00f },
+			{ 35, 0.66f },
+			{ 60, 0.40f },
+			{ 99, 0.25f },
+		});
+	}
+
+	float ComputeHolyDefenseFromARC(std::int32_t arc)
+	{
+		return PiecewiseFloat(arc, {
+			{ 20, 2.00f },
+			{ 35, 0.66f },
+			{ 60, 0.40f },
+			{ 99, 0.25f },
+		});
+	}
+
+	float ComputeUniversalResistance(std::int32_t stat)
+	{
+		return PiecewiseFloat(stat, {
+			{ 30, 1.50f },
+			{ 40, 3.00f },
+			{ 60, 1.00f },
+			{ 99, 0.25f },
+		});
 	}
 }
 
@@ -125,28 +184,19 @@ namespace ER
 	{
 		const std::int32_t level = std::max(1, erLevel);
 		PublishedSheetAVGs s;
+		const float globalDef = ComputeLayer1LevelIncrement(level);
 
-		s.l1Phys =
-			static_cast<float>(level) +
-			static_cast<float>(attrs.str) * 0.5f +
-			static_cast<float>(attrs.end) * 0.2f;
-
-		s.l1Magic =
-			static_cast<float>(level) +
-			static_cast<float>(attrs.intl) * 0.6f +
-			static_cast<float>(attrs.mnd) * 0.1f;
-
-		s.l1Fire = static_cast<float>(level) + static_cast<float>(attrs.vig) * 0.6f;
-
-		s.l1Lightning = static_cast<float>(level) + static_cast<float>(attrs.fth) * 0.4f;
-
+		s.l1Phys = globalDef + ComputePhysicalDefenseFromSTR(attrs.str);
+		s.l1Magic = globalDef + ComputeMagicDefenseFromINT(attrs.intl);
+		s.l1Fire = globalDef + ComputeFireDefenseFromVIG(attrs.vig);
+		s.l1Lightning = globalDef + ComputeHolyDefenseFromARC(attrs.arc);
 		s.l1Frost = s.l1Magic;
 		s.l1Poison = s.l1Magic;
 
-		s.thImmunity = static_cast<float>(level + attrs.vig);
-		s.thRobustness = static_cast<float>(level + attrs.end);
-		s.thFocus = static_cast<float>(level + attrs.mnd);
-		s.thVitality = static_cast<float>(level + attrs.arc);
+		s.thImmunity = ComputeUniversalResistance(attrs.vig);
+		s.thRobustness = ComputeUniversalResistance(attrs.end);
+		s.thFocus = ComputeUniversalResistance(attrs.mnd);
+		s.thVitality = ComputeUniversalResistance(attrs.arc);
 		s.thMadness = static_cast<float>(derived.maxHP + derived.maxMP) * 0.5f;
 
 		s.equipLoadMax = static_cast<float>(derived.carryWeight);
@@ -155,6 +205,21 @@ namespace ER
 		s.equipLoadHeavy = s.equipLoadMax * 1.00f;
 
 		return s;
+	}
+
+	StatsSnapshot BuildStatsSnapshot(const AttributeSet& attrs, std::int32_t erLevel)
+	{
+		StatsSnapshot snapshot;
+		snapshot.attrs = attrs;
+		snapshot.erLevel = std::max(1, erLevel);
+		snapshot.derived = ComputeDerived(attrs);
+		snapshot.sheet = ComputePublishedSheetAVGs(attrs, snapshot.erLevel, snapshot.derived);
+		return snapshot;
+	}
+
+	StatsSnapshot GetCurrentStatsSnapshot()
+	{
+		return BuildStatsSnapshot(Persist::GetAttributes(), Persist::GetERLevel());
 	}
 
 	void ApplyToPlayer(const DerivedStats& stats)
@@ -171,25 +236,22 @@ namespace ER
 
 		const auto attrs = ER::GetAll(player);
 		const std::int32_t level = Persist::GetERLevel();
-		const auto sheet = ComputePublishedSheetAVGs(attrs, level, stats);
+		ApplyToPlayer(stats, attrs, level);
+	}
 
-		SetBaseByName(player, "ER_L1DEF_PHYS_AVG", sheet.l1Phys);
-		SetBaseByName(player, "ER_L1DEF_MAGIC_AVG", sheet.l1Magic);
-		SetBaseByName(player, "ER_L1DEF_FIRE_AVG", sheet.l1Fire);
-		SetBaseByName(player, "ER_L1DEF_FROST_AVG", sheet.l1Frost);
-		SetBaseByName(player, "ER_L1DEF_POISON_AVG", sheet.l1Poison);
-		SetBaseByName(player, "ER_L1DEF_LIGHTNING_AVG", sheet.l1Lightning);
+	void ApplyToPlayer(const DerivedStats& stats, const AttributeSet& attrs, std::int32_t erLevel)
+	{
+		auto* player = RE::PlayerCharacter::GetSingleton();
+		if (!player) {
+			return;
+		}
 
-		SetBaseByName(player, "ER_THRES_IMMUNITY_AVG", sheet.thImmunity);
-		SetBaseByName(player, "ER_THRES_ROBUSTNESS_AVG", sheet.thRobustness);
-		SetBaseByName(player, "ER_THRES_FOCUS_AVG", sheet.thFocus);
-		SetBaseByName(player, "ER_THRES_VITALITY_AVG", sheet.thVitality);
-		SetBaseByName(player, "ER_THRES_MADNESS_AVG", sheet.thMadness);
-
-		SetBaseByName(player, "ER_EQUIPLOAD_MAX_AVG", sheet.equipLoadMax);
-		SetBaseByName(player, "ER_EQUIPLOAD_LIGHT_AVG", sheet.equipLoadLight);
-		SetBaseByName(player, "ER_EQUIPLOAD_MEDIUM_AVG", sheet.equipLoadMedium);
-		SetBaseByName(player, "ER_EQUIPLOAD_HEAVY_AVG", sheet.equipLoadHeavy);
+		player->AsActorValueOwner()->SetBaseActorValue(RE::ActorValue::kHealth, static_cast<float>(stats.maxHP));
+		player->AsActorValueOwner()->SetBaseActorValue(RE::ActorValue::kMagicka, static_cast<float>(stats.maxMP));
+		player->AsActorValueOwner()->SetBaseActorValue(RE::ActorValue::kStamina, static_cast<float>(stats.maxSP));
+		player->AsActorValueOwner()->SetBaseActorValue(RE::ActorValue::kCarryWeight, static_cast<float>(stats.carryWeight));
+		(void)attrs;
+		(void)erLevel;
 	}
 }
 

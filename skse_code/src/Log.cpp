@@ -11,12 +11,12 @@ namespace Log
 			SKSE::stl::report_and_fail("Unable to resolve SKSE logs directory.");
 		}
 
-		*logsFolder /= "AspectsAttributes.log"sv;
+		*logsFolder /= "EldenRimLevelingSystem.log";
 
 		auto sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(logsFolder->string(), true);
-		auto logger = std::make_shared<spdlog::logger>("global log"s, std::move(sink));
+		auto defaultLogger = std::make_shared<spdlog::logger>("global log", std::move(sink));
 
-		spdlog::set_default_logger(std::move(logger));
+		spdlog::set_default_logger(std::move(defaultLogger));
 		spdlog::set_level(spdlog::level::info);
 		spdlog::flush_on(spdlog::level::info);
 		spdlog::set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%l] %v");

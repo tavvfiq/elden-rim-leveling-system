@@ -6,7 +6,7 @@ namespace ER::Config
 	// Safe to call once at plugin load; missing file or keys keep defaults.
 	void Load();
 
-	// Equip-load tier cutoffs as fractions of ER_EQUIPLOAD_MAX_AVG (carry-weight proxy).
+	// Equip-load tier cutoffs as fractions of max computed equip-load.
 	float EquipLoadLightFraction() noexcept;
 	float EquipLoadMediumFraction() noexcept;
 
@@ -23,4 +23,7 @@ namespace ER::Config
 	float MagicResistPerWill() noexcept;
 	float DiseaseResistPerEnd() noexcept;
 	float PoisonResistPerEnd() noexcept;
+	bool OverridePlayerGetLevel() noexcept;
+	bool DisableVanillaXPGain() noexcept;
+	bool EnableGoldKillDrops() noexcept;
 }

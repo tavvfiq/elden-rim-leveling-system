@@ -1,4 +1,5 @@
 #include "Config.h"
+#include "Economy.h"
 #include "Hooks.h"
 #include "Log.h"
 #include "Prisma.h"
@@ -23,6 +24,9 @@ namespace
 			break;
 		case SKSE::MessagingInterface::kDataLoaded:
 			logger::info("SKSE message: kDataLoaded");
+			if (ER::Config::EnableGoldKillDrops()) {
+				ER::InstallGoldKillReward();
+			}
 			break;
 		case SKSE::MessagingInterface::kPostPostLoad:
 			logger::info("SKSE message: kPostPostLoad");
@@ -35,16 +39,6 @@ namespace
 
 extern "C"
 {
-	__declspec(dllexport) constinit auto SKSEPlugin_Version = []() {
-		SKSE::PluginVersionData v{};
-		v.PluginVersion(1);
-		v.PluginName("AspectsAttributes");
-		v.AuthorName("taufiq.nugroho");
-		v.UsesAddressLibrary(true);
-		v.UsesNoStructs(true);
-		return v;
-	}();
-
 	__declspec(dllexport) bool SKSEAPI SKSEPlugin_Load(const SKSE::LoadInterface* skse)
 	{
 		SKSE::Init(skse);
