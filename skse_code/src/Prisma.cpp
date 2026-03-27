@@ -84,9 +84,16 @@ namespace
 		return static_cast<std::int32_t>(std::min<std::int64_t>(total, std::numeric_limits<std::int32_t>::max()));
 	}
 
+	void RecomputeAndApplyCurrentStats()
+	{
+		const auto snapshot = ER::GetCurrentStatsSnapshot();
+		ER::ApplyToPlayer(snapshot.derived, snapshot.attrs, snapshot.erLevel);
+	}
+
 
 	void OnRequestInitState(const char*)
 	{
+		RecomputeAndApplyCurrentStats();
 		Prisma::SendUpdateToUI();
 	}
 
@@ -444,6 +451,7 @@ namespace Prisma
 				logger::info("PrismaUI view DOM ready (view={})", currentView);
 				RegisterListeners(currentView);
 				g_prismaUI->Show(currentView);
+				RecomputeAndApplyCurrentStats();
 				Prisma::SendUpdateToUI();
 				g_prismaUI->Focus(currentView, true);
 			});
@@ -452,6 +460,7 @@ namespace Prisma
 		}
 
 		g_prismaUI->Show(g_view);
+		RecomputeAndApplyCurrentStats();
 		SendUpdateToUI();
 		g_prismaUI->Focus(g_view, true);
 	}

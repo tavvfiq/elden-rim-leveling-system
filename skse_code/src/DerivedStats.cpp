@@ -73,6 +73,12 @@ namespace
 		       static_cast<float>(seg4) * 0.03f;
 	}
 
+	float ComputeLayer1BaseDefense(std::int32_t level)
+	{
+		level = std::max(1, level);
+		return 10.0f + (static_cast<float>(level) + 78.0f) / 2.483f;
+	}
+
 	float ComputePhysicalDefenseFromSTR(std::int32_t str)
 	{
 		return PiecewiseFloat(str, {
@@ -184,12 +190,13 @@ namespace ER
 	{
 		const std::int32_t level = std::max(1, erLevel);
 		PublishedSheetAVGs s;
+		const float baseDef = ComputeLayer1BaseDefense(level);
 		const float globalDef = ComputeLayer1LevelIncrement(level);
 
-		s.l1Phys = globalDef + ComputePhysicalDefenseFromSTR(attrs.str);
-		s.l1Magic = globalDef + ComputeMagicDefenseFromINT(attrs.intl);
-		s.l1Fire = globalDef + ComputeFireDefenseFromVIG(attrs.vig);
-		s.l1Lightning = globalDef + ComputeHolyDefenseFromARC(attrs.arc);
+		s.l1Phys = baseDef + globalDef + ComputePhysicalDefenseFromSTR(attrs.str);
+		s.l1Magic = baseDef + globalDef + ComputeMagicDefenseFromINT(attrs.intl);
+		s.l1Fire = baseDef + globalDef + ComputeFireDefenseFromVIG(attrs.vig);
+		s.l1Lightning = baseDef + globalDef + ComputeHolyDefenseFromARC(attrs.arc);
 		s.l1Frost = s.l1Magic;
 		s.l1Poison = s.l1Magic;
 

@@ -188,6 +188,15 @@ body,
   gap: 10px;
   font-size: 13px;
   color: #ccbe9b;
+  background: linear-gradient(
+    90deg,
+    rgba(38, 33, 24, 0.72) 0%,
+    rgba(20, 17, 13, 0.6) 40%,
+    rgba(38, 33, 24, 0.72) 100%
+  );
+  border-top: 1px solid rgba(171, 148, 97, 0.28);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.55);
+  padding: 2px 8px;
 }
 
 .label {
