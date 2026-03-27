@@ -105,6 +105,15 @@ Even if you are leveling a stat that gives *no* specific elemental defense (like
 ## The Universal Resistance Curve
 *(Applies to Vigor, Endurance, Mind, and Arcane)*
 
+Base pool:
+
+- Each universal resistance family has a **base value of 90**.
+- Final thresholds are computed as:
+  - `Immunity = 90 + f(VIG)`
+  - `Robustness = 90 + f(END)`
+  - `Focus = 90 + f(MND)`
+  - `Vitality = 90 + f(ARC)`
+
 * **Stats 1 to 30:** You gain ~1.5 Resistance per attribute point.
 * **Stats 31 to 40:** You gain ~3.0 Resistance per attribute point. *(The massive spike! You get double the value per point in this bracket).*
 * **Stats 41 to 60:** You gain ~1.0 Resistance per attribute point. *(Heavy diminishing returns begin here).*

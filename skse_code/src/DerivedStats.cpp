@@ -200,10 +200,12 @@ namespace ER
 		s.l1Frost = s.l1Magic;
 		s.l1Poison = s.l1Magic;
 
-		s.thImmunity = ComputeUniversalResistance(attrs.vig);
-		s.thRobustness = ComputeUniversalResistance(attrs.end);
-		s.thFocus = ComputeUniversalResistance(attrs.mnd);
-		s.thVitality = ComputeUniversalResistance(attrs.arc);
+		// ER-style base resistance pools (per spec) + attribute contribution curve.
+		constexpr float kBaseResistance = 90.0f;
+		s.thImmunity = kBaseResistance + ComputeUniversalResistance(attrs.vig);
+		s.thRobustness = kBaseResistance + ComputeUniversalResistance(attrs.end);
+		s.thFocus = kBaseResistance + ComputeUniversalResistance(attrs.mnd);
+		s.thVitality = kBaseResistance + ComputeUniversalResistance(attrs.arc);
 		s.thMadness = static_cast<float>(derived.maxHP + derived.maxMP) * 0.5f;
 
 		s.equipLoadMax = static_cast<float>(derived.carryWeight);
@@ -253,12 +255,44 @@ namespace ER
 			return;
 		}
 
+		const auto baseH_before = player->AsActorValueOwner()->GetBaseActorValue(RE::ActorValue::kHealth);
+		const auto baseM_before = player->AsActorValueOwner()->GetBaseActorValue(RE::ActorValue::kMagicka);
+		const auto baseS_before = player->AsActorValueOwner()->GetBaseActorValue(RE::ActorValue::kStamina);
+		const auto baseCW_before = player->AsActorValueOwner()->GetBaseActorValue(RE::ActorValue::kCarryWeight);
+
 		player->AsActorValueOwner()->SetBaseActorValue(RE::ActorValue::kHealth, static_cast<float>(stats.maxHP));
 		player->AsActorValueOwner()->SetBaseActorValue(RE::ActorValue::kMagicka, static_cast<float>(stats.maxMP));
 		player->AsActorValueOwner()->SetBaseActorValue(RE::ActorValue::kStamina, static_cast<float>(stats.maxSP));
 		player->AsActorValueOwner()->SetBaseActorValue(RE::ActorValue::kCarryWeight, static_cast<float>(stats.carryWeight));
-		(void)attrs;
-		(void)erLevel;
+
+		const auto baseH_after = player->AsActorValueOwner()->GetBaseActorValue(RE::ActorValue::kHealth);
+		const auto baseM_after = player->AsActorValueOwner()->GetBaseActorValue(RE::ActorValue::kMagicka);
+		const auto baseS_after = player->AsActorValueOwner()->GetBaseActorValue(RE::ActorValue::kStamina);
+		const auto baseCW_after = player->AsActorValueOwner()->GetBaseActorValue(RE::ActorValue::kCarryWeight);
+
+		logger::info(
+			"ApplyToPlayer: erLevel={} attrs(v,m,e,s,d,i,f,a)=({},{},{},{},{},{},{},{}) derived(hp,mp,sp,cw)=({},{},{},{}) base_before=({:.1f},{:.1f},{:.1f},{:.1f}) base_after=({:.1f},{:.1f},{:.1f},{:.1f})",
+			std::max(1, erLevel),
+			attrs.vig,
+			attrs.mnd,
+			attrs.end,
+			attrs.str,
+			attrs.dex,
+			attrs.intl,
+			attrs.fth,
+			attrs.arc,
+			stats.maxHP,
+			stats.maxMP,
+			stats.maxSP,
+			stats.carryWeight,
+			baseH_before,
+			baseM_before,
+			baseS_before,
+			baseCW_before,
+			baseH_after,
+			baseM_after,
+			baseS_after,
+			baseCW_after);
 	}
 }
 

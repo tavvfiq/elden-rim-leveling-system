@@ -313,7 +313,9 @@ namespace
 		pendingAttrs.fth += g_pendingDelta.fth;
 		pendingAttrs.arc += g_pendingDelta.arc;
 
-		const auto pendingSnapshot = ER::BuildStatsSnapshot(pendingAttrs, level);
+		// Pending allocation implies pending ER level increases (1 level per confirmed attribute point).
+		// Use the pending ER level here so preview matches post-confirm computed values.
+		const auto pendingSnapshot = ER::BuildStatsSnapshot(pendingAttrs, level + pendingPoints);
 
 		json j;
 		j["ready"] = true;
