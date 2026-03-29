@@ -27,8 +27,8 @@ This document is the current runtime contract for this repository.
 
 Use:
 - Internal snapshot API: `ER::GetCurrentStatsSnapshot()`
-- Public C++ API: `RequestPluginAPI` (`ERLS_API.h`)
-- Papyrus API: `ERLS.psc`
+- Public C++ API: `RequestPluginAPI` (`ERAS_API.h`)
+- Papyrus API: `ERAS.psc`
 
 ## 4) Perk-gated gameplay bridge
 
@@ -36,7 +36,7 @@ Because vanilla perk spending UI is bypassed, the plugin provides:
 
 - Perk point parity from ER level delta (`EnablePerkPointParity`)
 - Auto-unlock rules by ER level (`EnablePerkAutoUnlock`)
-  - configured in `SKSE/Plugins/eldenrimlevelingsystem_perk_unlocks.json`
+  - configured in `SKSE/Plugins/eras_perk_unlocks.json`
   - supports robust lookup via `modName + formId` for perk overhauls
   - supports `editorId` fallback
 
@@ -58,6 +58,6 @@ External systems (combat framework, alternate starts, perk overhauls) should:
 - `skse_code/src/DerivedStats.*` — derived formulas and application
 - `skse_code/src/Serialization.*` — persistent model
 - `skse_code/src/PerkProgression.*` — perk parity and auto-unlock
-- `skse_code/src/ERLS_API.h` + `skse_code/src/plugin.cpp` — native plugin API
-- `skse_code/src/PapyrusAPI.cpp` + `SKSE/Plugins/Source/ERLS.psc` — Papyrus API
+- `skse_code/src/ERAS_API.h` + `skse_code/src/plugin.cpp` — native plugin API
+- `skse_code/src/PapyrusAPI.cpp` + `SKSE/Plugins/Source/ERAS.psc` — Papyrus API
 

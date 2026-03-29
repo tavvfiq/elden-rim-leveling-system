@@ -4,7 +4,7 @@ This repository contains a native SKSE mod that replaces vanilla level-up flow w
 
 ## Current architecture
 
-- **Core plugin**: `skse_code/` (`eldenrimlevelingsystem.dll`)
+- **Core plugin**: `skse_code/` (`eras.dll`)
 - **UI**: PrismaUI + React app in `skse_code/ui/`
 - **State storage**: SKSE serialization (`Persist::*`) for:
   - ER level
@@ -26,15 +26,15 @@ This repository contains a native SKSE mod that replaces vanilla level-up flow w
   - perk point parity from ER level delta
   - auto-unlock by ER level from config rules
 - Public APIs:
-  - C++ plugin API (`RequestPluginAPI`, `ERLS_API.h`)
-  - Papyrus native API (`ERLS.psc`)
+  - C++ plugin API (`RequestPluginAPI`, `ERAS_API.h`)
+  - Papyrus native API (`ERAS.psc`)
 
 ## Integration files to package
 
-- `SKSE/Plugins/eldenrimlevelingsystem.ini`
-- `SKSE/Plugins/eldenrimlevelingsystem_gold_kill.json`
-- `SKSE/Plugins/eldenrimlevelingsystem_perk_unlocks.json`
-- `SKSE/Plugins/Source/ERLS.psc` (for external Papyrus mods)
+- `SKSE/Plugins/eras.ini`
+- `SKSE/Plugins/eras_gold_kill.json`
+- `SKSE/Plugins/eras_perk_unlocks.json`
+- `SKSE/Plugins/Source/ERAS.psc` (for external Papyrus mods)
 - PrismaUI built assets (see `skse_code/README_SKSE.md`)
 
 ## Quick map: where to change what
@@ -45,5 +45,5 @@ This repository contains a native SKSE mod that replaces vanilla level-up flow w
 - Serialization model: `skse_code/src/Serialization.*`
 - Config parsing: `skse_code/src/Config.*`
 - Perk parity/auto-unlock: `skse_code/src/PerkProgression.*`
-- Public C++ API: `skse_code/src/ERLS_API.h`, `skse_code/src/plugin.cpp`
-- Papyrus API: `skse_code/src/PapyrusAPI.cpp`, `SKSE/Plugins/Source/ERLS.psc`
+- Public C++ API: `skse_code/src/ERAS_API.h`, `skse_code/src/plugin.cpp`
+- Papyrus API: `skse_code/src/PapyrusAPI.cpp`, `SKSE/Plugins/Source/ERAS.psc`

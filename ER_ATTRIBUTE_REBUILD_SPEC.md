@@ -21,12 +21,12 @@ This file records what is implemented today after the rebuild and integration pa
 ### Native C++ API
 
 - Export: `RequestPluginAPI`
-- Header: `skse_code/src/ERLS_API.h`
+- Header: `skse_code/src/ERAS_API.h`
 - Provides snapshot/level/attributes getters.
 
 ### Papyrus API
 
-- Script: `SKSE/Plugins/Source/ERLS.psc`
+- Script: `SKSE/Plugins/Source/ERAS.psc`
 - Native functions:
   - `SetERLevel`
   - `SetAttributes`
@@ -37,11 +37,11 @@ Use this for alternate-start starter templates and class systems.
 
 ## Config files
 
-- `SKSE/Plugins/eldenrimlevelingsystem.ini`
+- `SKSE/Plugins/eras.ini`
   - progression and runtime toggles
-- `SKSE/Plugins/eldenrimlevelingsystem_gold_kill.json`
+- `SKSE/Plugins/eras_gold_kill.json`
   - kill-gold formula tuning
-- `SKSE/Plugins/eldenrimlevelingsystem_perk_unlocks.json`
+- `SKSE/Plugins/eras_perk_unlocks.json`
   - perk unlock rules by ER level (`modName+formId` or `editorId`)
 
 ## Remaining extension points

@@ -43,6 +43,7 @@ namespace ER
 
 	PublishedSheetAVGs ComputePublishedSheetAVGs(const AttributeSet& attrs, std::int32_t erLevel, const DerivedStats& derived);
 	StatsSnapshot BuildStatsSnapshot(const AttributeSet& attrs, std::int32_t erLevel);
+	StatsSnapshot GetStatsSnapshotForActor(RE::Actor* actor);
 	StatsSnapshot GetCurrentStatsSnapshot();
 
 	// Initial, placeholder “ER-like” softcap curves.

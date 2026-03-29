@@ -4,7 +4,7 @@ Implemented in `skse_code/src/Economy.cpp`.
 
 ## Enable toggle
 
-`SKSE/Plugins/eldenrimlevelingsystem.ini`
+`SKSE/Plugins/eras.ini`
 
 ```ini
 EnableGoldKillDrops = true
@@ -21,7 +21,7 @@ Values are floored/clamped to integer payout in code.
 
 ## External tuning file
 
-`SKSE/Plugins/eldenrimlevelingsystem_gold_kill.json`
+`SKSE/Plugins/eras_gold_kill.json`
 
 Supported fields:
 

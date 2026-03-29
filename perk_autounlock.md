@@ -3,7 +3,7 @@
 Perk auto-unlock is controlled by:
 
 - INI toggle: `EnablePerkAutoUnlock = true`
-- JSON file: `SKSE/Plugins/eldenrimlevelingsystem_perk_unlocks.json`
+- JSON file: `SKSE/Plugins/eras_perk_unlocks.json`
 
 ## Rule format
 

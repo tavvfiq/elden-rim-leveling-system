@@ -7,7 +7,7 @@
 
 namespace
 {
-	constexpr auto kScriptName = "ERLS";
+	constexpr auto kScriptName = "ERAS";
 
 	std::int32_t ClampAttr(std::int32_t v)
 	{
@@ -109,6 +109,39 @@ namespace
 		RecomputeAndApplyNow();
 		return true;
 	}
+
+	// attrIndex: 0=vig, 1=mnd, 2=end, 3=str, 4=dex, 5=intl, 6=fth, 7=arc
+	std::int32_t GetActorERAttr(RE::StaticFunctionTag*, RE::Actor* target, std::int32_t attrIndex)
+	{
+		if (!target) {
+			return 0;
+		}
+		const auto s = ER::GetAll(target);
+		switch (attrIndex) {
+		case 0: return s.vig;
+		case 1: return s.mnd;
+		case 2: return s.end;
+		case 3: return s.str;
+		case 4: return s.dex;
+		case 5: return s.intl;
+		case 6: return s.fth;
+		case 7: return s.arc;
+		default: return 0;
+		}
+	}
+
+	std::int32_t GetActorERLevelForActor(RE::StaticFunctionTag*, RE::Actor* target)
+	{
+		if (!target) {
+			return 1;
+		}
+		return ER::GetActorEffectiveLevel(target);
+	}
+
+	bool IsActorERDerivedFromVanilla(RE::StaticFunctionTag*, RE::Actor* target)
+	{
+		return target && ER::IsNPCAttributeEligible(target);
+	}
 }
 
 namespace ER::Papyrus
@@ -130,6 +163,9 @@ namespace ER::Papyrus
 			vm->RegisterFunction("SetAttributes", kScriptName, SetAttributes);
 			vm->RegisterFunction("SetAttributesAndLevel", kScriptName, SetAttributesAndLevel);
 			vm->RegisterFunction("ApplyNow", kScriptName, ApplyNow);
+			vm->RegisterFunction("GetActorERAttr", kScriptName, GetActorERAttr);
+			vm->RegisterFunction("GetActorERLevelForActor", kScriptName, GetActorERLevelForActor);
+			vm->RegisterFunction("IsActorERDerivedFromVanilla", kScriptName, IsActorERDerivedFromVanilla);
 
 			logger::info("Papyrus API registered (script '{}')", kScriptName);
 			return true;

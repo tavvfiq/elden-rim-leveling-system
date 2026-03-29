@@ -273,7 +273,7 @@ namespace
 		Prisma::Hide();
 	}
 
-	constexpr const char* kViewPath = "EldenRimLevelingSystem/index.html";
+	constexpr const char* kViewPath = "eras/index.html";
 
 	void RegisterListeners(PrismaView view)
 	{

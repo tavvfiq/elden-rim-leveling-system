@@ -2,6 +2,12 @@
 
 namespace ER
 {
+	// Vanilla keyword: actors that use skill→ER mapping (see vanilla_skill_point_er_attribute.md).
+	// Player is excluded; player attributes come from Persist.
+	inline constexpr std::string_view kNPCDerivedAttributeKeyword = "ActorTypeNPC";
+
+	[[nodiscard]] bool IsNPCAttributeEligible(RE::Actor* actor) noexcept;
+
 	enum class Attribute : std::uint8_t
 	{
 		VIG,
@@ -26,6 +32,12 @@ namespace ER
 		std::int32_t arc{ 0 };
 	};
 
+	// Effective ER level for sheet math: player uses persisted ER level; everyone else uses Skyrim level (min 1).
+	[[nodiscard]] std::int32_t GetActorEffectiveLevel(RE::Actor* actor) noexcept;
+
+	// Resolved attributes: player from Persist; ActorTypeNPC (non-player) from vanilla skills; else zeros.
+	[[nodiscard]] AttributeSet GetAll(RE::Actor* actor);
+
 	// AV names. Must match what ActorValueData / AV Generator registers.
 	constexpr std::string_view ToAVName(Attribute a) noexcept
 	{
@@ -45,8 +57,6 @@ namespace ER
 	RE::ActorValue ResolveActorValue(Attribute a);
 	std::int32_t Get(RE::Actor* actor, Attribute a);
 	void Set(RE::Actor* actor, Attribute a, std::int32_t value);
-
-	AttributeSet GetAll(RE::Actor* actor);
 
 	// Points model (initially no class templates; base is treated as 0 until we add baselines).
 	std::int32_t PointsSpent(const AttributeSet& set);

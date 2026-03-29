@@ -1,6 +1,6 @@
 #include "Config.h"
 #include "DerivedStats.h"
-#include "ERLS_API.h"
+#include "ERAS_API.h"
 #include "Economy.h"
 #include "Hooks.h"
 #include "Log.h"
@@ -15,12 +15,8 @@ using namespace std::literals;
 
 namespace
 {
-	bool GetPlayerStats_API(ERLS_API::PlayerStatsSnapshot* outSnapshot) noexcept
+	void FillApiSnapshot(const ER::StatsSnapshot& snapshot, ERAS_API::PlayerStatsSnapshot* outSnapshot) noexcept
 	{
-		if (!outSnapshot) {
-			return false;
-		}
-		const auto snapshot = ER::GetCurrentStatsSnapshot();
 		outSnapshot->erLevel = snapshot.erLevel;
 		outSnapshot->attrs = {
 			snapshot.attrs.vig,
@@ -59,6 +55,14 @@ namespace
 			snapshot.sheet.equipLoadMedium,
 			snapshot.sheet.equipLoadHeavy
 		};
+	}
+
+	bool GetPlayerStats_API(ERAS_API::PlayerStatsSnapshot* outSnapshot) noexcept
+	{
+		if (!outSnapshot) {
+			return false;
+		}
+		FillApiSnapshot(ER::GetCurrentStatsSnapshot(), outSnapshot);
 		return true;
 	}
 
@@ -67,7 +71,7 @@ namespace
 		return Persist::GetERLevel();
 	}
 
-	bool GetAttributes_API(ERLS_API::AttributeSet* outAttrs) noexcept
+	bool GetAttributes_API(ERAS_API::AttributeSet* outAttrs) noexcept
 	{
 		if (!outAttrs) {
 			return false;
@@ -86,10 +90,24 @@ namespace
 		return true;
 	}
 
-	ERLS_API::IERLS1 g_apiV1{
+	bool GetStatsSnapshotForActor_API(void* actorPtr, ERAS_API::PlayerStatsSnapshot* outSnapshot) noexcept
+	{
+		if (!outSnapshot) {
+			return false;
+		}
+		auto* actor = reinterpret_cast<RE::Actor*>(actorPtr);
+		if (!actor) {
+			return false;
+		}
+		FillApiSnapshot(ER::GetStatsSnapshotForActor(actor), outSnapshot);
+		return true;
+	}
+
+	ERAS_API::IERAS1 g_apiV1{
 		&GetPlayerStats_API,
 		&GetERLevel_API,
-		&GetAttributes_API
+		&GetAttributes_API,
+		&GetStatsSnapshotForActor_API
 	};
 
 	void OnSKSEMessage(SKSE::MessagingInterface::Message* message)
@@ -121,10 +139,10 @@ namespace
 
 extern "C"
 {
-	__declspec(dllexport) void* RequestPluginAPI(ERLS_API::InterfaceVersion interfaceVersion)
+	__declspec(dllexport) void* RequestPluginAPI(ERAS_API::InterfaceVersion interfaceVersion)
 	{
 		switch (interfaceVersion) {
-		case ERLS_API::InterfaceVersion::V1:
+		case ERAS_API::InterfaceVersion::V1:
 			return std::addressof(g_apiV1);
 		default:
 			return nullptr;

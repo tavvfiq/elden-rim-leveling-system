@@ -10,7 +10,7 @@ namespace ER::Config
 	float EquipLoadLightFraction() noexcept;
 	float EquipLoadMediumFraction() noexcept;
 
-	// Legacy MCM parity (defaults match former MCM Helper sliders; see eldenrimlevelingsystem.ini [Tuning]).
+	// Legacy MCM parity (defaults match former MCM Helper sliders; see eras.ini [Tuning]).
 	// DerivedStats does not use all of these yet; ERCF or future curves can read via getters when wired.
 	float HpPerLevelGain() noexcept;
 	float MpPerLevelGain() noexcept;

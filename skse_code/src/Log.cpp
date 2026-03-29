@@ -11,7 +11,7 @@ namespace Log
 			SKSE::stl::report_and_fail("Unable to resolve SKSE logs directory.");
 		}
 
-		*logsFolder /= "EldenRimLevelingSystem.log";
+		*logsFolder /= "ERAS.log";
 
 		auto sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(logsFolder->string(), true);
 		auto defaultLogger = std::make_shared<spdlog::logger>("global log", std::move(sink));

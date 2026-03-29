@@ -49,7 +49,7 @@ Derived values are applied at least on:
 
 Use one of:
 
-- C++ plugin API: `ERLS_API.h` + exported `RequestPluginAPI`
-- Papyrus API: `SKSE/Plugins/Source/ERLS.psc`
+- C++ plugin API: `ERAS_API.h` + exported `RequestPluginAPI`
+- Papyrus API: `SKSE/Plugins/Source/ERAS.psc`
 
 for starter templates, class initialization, and external mod sync.

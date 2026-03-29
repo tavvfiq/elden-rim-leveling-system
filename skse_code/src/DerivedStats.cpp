@@ -226,9 +226,23 @@ namespace ER
 		return snapshot;
 	}
 
+	StatsSnapshot GetStatsSnapshotForActor(RE::Actor* actor)
+	{
+		if (!actor) {
+			return {};
+		}
+		const auto attrs = ER::GetAll(actor);
+		const auto level = ER::GetActorEffectiveLevel(actor);
+		return BuildStatsSnapshot(attrs, level);
+	}
+
 	StatsSnapshot GetCurrentStatsSnapshot()
 	{
-		return BuildStatsSnapshot(Persist::GetAttributes(), Persist::GetERLevel());
+		auto* player = RE::PlayerCharacter::GetSingleton();
+		if (!player) {
+			return BuildStatsSnapshot(Persist::GetAttributes(), Persist::GetERLevel());
+		}
+		return GetStatsSnapshotForActor(player);
 	}
 
 	void ApplyToPlayer(const DerivedStats& stats)
@@ -244,7 +258,7 @@ namespace ER
 		player->AsActorValueOwner()->SetBaseActorValue(RE::ActorValue::kCarryWeight, static_cast<float>(stats.carryWeight));
 
 		const auto attrs = ER::GetAll(player);
-		const std::int32_t level = Persist::GetERLevel();
+		const std::int32_t level = ER::GetActorEffectiveLevel(player);
 		ApplyToPlayer(stats, attrs, level);
 	}
 

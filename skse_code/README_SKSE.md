@@ -24,20 +24,20 @@ Key behavior:
 
 Package these with your mod:
 
-- `Data/SKSE/Plugins/eldenrimlevelingsystem.dll`
-- `Data/SKSE/Plugins/eldenrimlevelingsystem.ini`
-- `Data/SKSE/Plugins/eldenrimlevelingsystem_gold_kill.json`
-- `Data/SKSE/Plugins/eldenrimlevelingsystem_perk_unlocks.json`
-- `Data/SKSE/Plugins/Source/ERLS.psc` (for Papyrus consumers)
+- `Data/SKSE/Plugins/eras.dll`
+- `Data/SKSE/Plugins/eras.ini`
+- `Data/SKSE/Plugins/eras_gold_kill.json`
+- `Data/SKSE/Plugins/eras_perk_unlocks.json`
+- `Data/SKSE/Plugins/Source/ERAS.psc` (for Papyrus consumers)
 
 ## PrismaUI packaging
 
-- View path used by plugin: `EldenRimLevelingSystem/index.html`
+- View path used by plugin: `eras/index.html`
 - Build UI from `skse_code/ui/` and package output under PrismaUI views so that path resolves at runtime.
 
 ## Config summary
 
-From `eldenrimlevelingsystem.ini`:
+From `eras.ini`:
 
 - `OverridePlayerGetLevel`
 - `DisableVanillaXPGain`
@@ -50,7 +50,7 @@ From `eldenrimlevelingsystem.ini`:
 
 ### C++ plugin API
 
-- Header: `skse_code/src/ERLS_API.h`
+- Header: `skse_code/src/ERAS_API.h`
 - Export: `RequestPluginAPI`
 - Returns interface with getters for:
   - full player snapshot
@@ -59,7 +59,7 @@ From `eldenrimlevelingsystem.ini`:
 
 ### Papyrus API
 
-- Script: `SKSE/Plugins/Source/ERLS.psc`
+- Script: `SKSE/Plugins/Source/ERAS.psc`
 - Native functions:
   - `SetERLevel`
   - `SetAttributes`
