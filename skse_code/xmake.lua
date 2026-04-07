@@ -9,6 +9,10 @@ set_warnings("allextra")
 add_rules("mode.debug", "mode.releasedbg")
 set_defaultmode("releasedbg")
 
+-- CommonLib with skyrim_vr=true uses an empty PLAYER_RUNTIME_DATA stub; we need the flat layout
+-- (playerFlags.sleeping, etc.) for sleep gating. This plugin targets SSE/AE desktop only.
+set_config("skyrim_vr", false)
+
 -- TODO: make this path configurable/relative
 includes("D:/Modding/CommonLibSSE-NG")
 

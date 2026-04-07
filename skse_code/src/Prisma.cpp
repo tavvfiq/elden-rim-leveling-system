@@ -1,6 +1,7 @@
 #include "Prisma.h"
 
 #include "Attributes.h"
+#include "Config.h"
 #include "DerivedStats.h"
 #include "Economy.h"
 #include "PerkProgression.h"
@@ -17,6 +18,24 @@ namespace
 	bool g_createdView{ false };
 	bool g_levelUpMenuOpen{ false };
 	ER::AttributeSet g_pendingDelta{};
+	// Set by TESSleepStart until TESSleepStop; supplements playerFlags.sleeping when the bit lags the menu.
+	bool g_sleepScriptSession{ false };
+
+	bool IsPlayerSleepingInEngine()
+	{
+		const auto* player = RE::PlayerCharacter::GetSingleton();
+		return player && player->GetPlayerRuntimeData().playerFlags.sleeping;
+	}
+
+	bool AllocationEditsAllowed()
+	{
+		if (!ER::Config::RequireSleepForAttributeAllocation()) {
+			return true;
+		}
+		// Prefer engine state (reliable once lying down). Script session covers TESSleepStart before the
+		// sleeping bit is set, or odd bed flows where the UI opens first.
+		return g_sleepScriptSession || IsPlayerSleepingInEngine();
+	}
 
 	std::optional<ER::Attribute> ParseAttr(const char* args)
 	{
@@ -100,6 +119,10 @@ namespace
 
 	void OnLevelUp(const char*)
 	{
+		if (!AllocationEditsAllowed()) {
+			Prisma::SendUpdateToUI();
+			return;
+		}
 		const auto currentLevel = Persist::GetERLevel();
 		const auto cost = ER::GoldCostToLevelUp(currentLevel);
 		if (!ER::TrySpendPlayerGold(cost)) {
@@ -114,6 +137,10 @@ namespace
 
 	void OnAllocatePoint(const char* args)
 	{
+		if (!AllocationEditsAllowed()) {
+			Prisma::SendUpdateToUI();
+			return;
+		}
 		const auto optAttr = ParseAttr(args);
 		if (!optAttr) {
 			return;
@@ -143,6 +170,10 @@ namespace
 
 	void OnRefundPoint(const char* args)
 	{
+		if (!AllocationEditsAllowed()) {
+			Prisma::SendUpdateToUI();
+			return;
+		}
 		const auto optAttr = ParseAttr(args);
 		if (!optAttr) {
 			return;
@@ -160,6 +191,10 @@ namespace
 
 	void OnConfirmAllocation(const char*)
 	{
+		if (!AllocationEditsAllowed()) {
+			Prisma::SendUpdateToUI();
+			return;
+		}
 		auto* player = RE::PlayerCharacter::GetSingleton();
 		if (!player) {
 			return;
@@ -298,9 +333,10 @@ namespace
 		const auto nextLevelUpCost = ER::GoldCostToLevelUp(level + pendingPoints);
 		const auto pendingCost = GetPendingGoldCost(level, pendingPoints);
 		const auto gold = ER::GetPlayerGold();
-		const bool canLevelUp = gold >= levelUpCost;
-		const bool canAllocate = gold >= GetPendingGoldCost(level, pendingPoints + 1);
-		const bool canConfirm = pendingPoints > 0 && gold >= pendingCost;
+		const bool allocAllowed = AllocationEditsAllowed();
+		const bool canLevelUp = gold >= levelUpCost && allocAllowed;
+		const bool canAllocate = gold >= GetPendingGoldCost(level, pendingPoints + 1) && allocAllowed;
+		const bool canConfirm = pendingPoints > 0 && gold >= pendingCost && allocAllowed;
 
 		// For arrow displays we compute a “pending” derived set.
 		auto pendingAttrs = attrs;
@@ -320,6 +356,7 @@ namespace
 		json j;
 		j["ready"] = true;
 		j["levelUpMenuOpen"] = g_levelUpMenuOpen;
+		j["allocationAllowed"] = allocAllowed;
 		j["attributes"] = {
 			{ "vig", attrs.vig },
 			{ "mnd", attrs.mnd },
@@ -477,6 +514,9 @@ namespace Prisma
 		}
 
 		g_prismaUI->Hide(g_view);
+		if (g_sleepScriptSession) {
+			g_sleepScriptSession = false;
+		}
 	}
 
 	bool IsHidden()
@@ -490,6 +530,31 @@ namespace Prisma
 	void SetLevelUpMenuOpen(bool open)
 	{
 		g_levelUpMenuOpen = open;
+	}
+
+	void NotifySleepStarted()
+	{
+		ER::RestorePlayerHealthMagickaOnSleep();
+
+		if (ER::Config::RequireSleepForAttributeAllocation()) {
+			g_sleepScriptSession = true;
+		}
+		if (ER::Config::OpenSkillMenuOnSleep()) {
+			SetLevelUpMenuOpen(true);
+			ShowLevelUp();
+		} else {
+			SendUpdateToUI();
+		}
+	}
+
+	void NotifySleepEnded()
+	{
+		if (ER::Config::RequireSleepForAttributeAllocation()) {
+			g_sleepScriptSession = false;
+			g_pendingDelta = {};
+		}
+		SetLevelUpMenuOpen(false);
+		SendUpdateToUI();
 	}
 
 	bool IsLevelUpMenuOpen()

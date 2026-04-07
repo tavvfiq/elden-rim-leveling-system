@@ -4,6 +4,8 @@
 #include "Economy.h"
 #include "Hooks.h"
 #include "Log.h"
+#include "NpcResourcePoolsOnLoad.h"
+#include "SleepAllocationGate.h"
 #include "PapyrusAPI.h"
 #include "PerkProgression.h"
 #include "Prisma.h"
@@ -126,6 +128,12 @@ namespace
 			ER::SyncPerkProgressionFromERLevel();
 			if (ER::Config::EnableGoldKillDrops()) {
 				ER::InstallGoldKillReward();
+			}
+			if (ER::Config::ApplyNpcDerivedPoolsOnLoad()) {
+				ER::InstallNpcDerivedPoolsOnLoad();
+			}
+			if (ER::Config::OpenSkillMenuOnSleep() || ER::Config::RequireSleepForAttributeAllocation()) {
+				ER::InstallSleepAllocationGate();
 			}
 			break;
 		case SKSE::MessagingInterface::kPostPostLoad:

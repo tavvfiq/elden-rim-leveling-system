@@ -216,6 +216,18 @@ namespace ER
 		return s;
 	}
 
+	PublishedSheetAVGs ComputePublishedSheetAVGsForActor(RE::Actor* actor, const AttributeSet& attrs, std::int32_t erLevel, const DerivedStats& derived)
+	{
+		auto s = ComputePublishedSheetAVGs(attrs, erLevel, derived);
+		if (actor) {
+			// Add a small portion of current armor rating to physical defense.
+			// This is intentionally lightweight and does not mutate vanilla DamageResist.
+			const float armorRating = std::max(0.0f, actor->CalcArmorRating());
+			s.l1Phys += armorRating * 0.10f;
+		}
+		return s;
+	}
+
 	StatsSnapshot BuildStatsSnapshot(const AttributeSet& attrs, std::int32_t erLevel)
 	{
 		StatsSnapshot snapshot;
@@ -233,7 +245,12 @@ namespace ER
 		}
 		const auto attrs = ER::GetAll(actor);
 		const auto level = ER::GetActorEffectiveLevel(actor);
-		return BuildStatsSnapshot(attrs, level);
+		StatsSnapshot snapshot;
+		snapshot.attrs = attrs;
+		snapshot.erLevel = std::max(1, level);
+		snapshot.derived = ComputeDerived(attrs);
+		snapshot.sheet = ComputePublishedSheetAVGsForActor(actor, attrs, snapshot.erLevel, snapshot.derived);
+		return snapshot;
 	}
 
 	StatsSnapshot GetCurrentStatsSnapshot()
@@ -278,35 +295,42 @@ namespace ER
 		player->AsActorValueOwner()->SetBaseActorValue(RE::ActorValue::kMagicka, static_cast<float>(stats.maxMP));
 		player->AsActorValueOwner()->SetBaseActorValue(RE::ActorValue::kStamina, static_cast<float>(stats.maxSP));
 		player->AsActorValueOwner()->SetBaseActorValue(RE::ActorValue::kCarryWeight, static_cast<float>(stats.carryWeight));
+	}
 
-		const auto baseH_after = player->AsActorValueOwner()->GetBaseActorValue(RE::ActorValue::kHealth);
-		const auto baseM_after = player->AsActorValueOwner()->GetBaseActorValue(RE::ActorValue::kMagicka);
-		const auto baseS_after = player->AsActorValueOwner()->GetBaseActorValue(RE::ActorValue::kStamina);
-		const auto baseCW_after = player->AsActorValueOwner()->GetBaseActorValue(RE::ActorValue::kCarryWeight);
+	void ApplyDerivedResourcePoolsToActor(RE::Actor* actor)
+	{
+		if (!actor || actor->IsPlayerRef()) {
+			return;
+		}
+		auto* owner = actor->AsActorValueOwner();
+		if (!owner) {
+			return;
+		}
+		const auto attrs = GetAll(actor);
+		const auto derived = ComputeDerived(attrs);
+		owner->SetBaseActorValue(RE::ActorValue::kHealth, static_cast<float>(derived.maxHP));
+		owner->SetBaseActorValue(RE::ActorValue::kMagicka, static_cast<float>(derived.maxMP));
+		owner->SetBaseActorValue(RE::ActorValue::kStamina, static_cast<float>(derived.maxSP));
+		owner->SetBaseActorValue(RE::ActorValue::kCarryWeight, static_cast<float>(derived.carryWeight));
+	}
 
-		logger::info(
-			"ApplyToPlayer: erLevel={} attrs(v,m,e,s,d,i,f,a)=({},{},{},{},{},{},{},{}) derived(hp,mp,sp,cw)=({},{},{},{}) base_before=({:.1f},{:.1f},{:.1f},{:.1f}) base_after=({:.1f},{:.1f},{:.1f},{:.1f})",
-			std::max(1, erLevel),
-			attrs.vig,
-			attrs.mnd,
-			attrs.end,
-			attrs.str,
-			attrs.dex,
-			attrs.intl,
-			attrs.fth,
-			attrs.arc,
-			stats.maxHP,
-			stats.maxMP,
-			stats.maxSP,
-			stats.carryWeight,
-			baseH_before,
-			baseM_before,
-			baseS_before,
-			baseCW_before,
-			baseH_after,
-			baseM_after,
-			baseS_after,
-			baseCW_after);
+	void RestorePlayerHealthMagickaOnSleep()
+	{
+		if (!ER::Config::FullRestoreHealthMagickaOnSleep()) {
+			return;
+		}
+		auto* player = RE::PlayerCharacter::GetSingleton();
+		if (!player) {
+			return;
+		}
+		auto* av = player->AsActorValueOwner();
+		if (!av) {
+			return;
+		}
+		// Large restore clears the kDamage modifier pool (same pattern as vanilla sleep / potions).
+		constexpr float kRestore = 1.0e6f;
+		av->RestoreActorValue(RE::ACTOR_VALUE_MODIFIER::kDamage, RE::ActorValue::kHealth, kRestore);
+		av->RestoreActorValue(RE::ACTOR_VALUE_MODIFIER::kDamage, RE::ActorValue::kMagicka, kRestore);
 	}
 }
 

@@ -28,4 +28,13 @@ namespace ER::Config
 	bool EnableGoldKillDrops() noexcept;
 	bool EnablePerkPointParity() noexcept;
 	bool EnablePerkAutoUnlock() noexcept;
+	// Humanoid NPCs (ActorTypeNPC): set Health/Magicka/Stamina/CarryWeight base from ER-derived curves once per load.
+	bool ApplyNpcDerivedPoolsOnLoad() noexcept;
+
+	// When true, opening the Prisma skill view on bed sleep is automatic.
+	bool OpenSkillMenuOnSleep() noexcept;
+	// When true, attribute allocation / confirm / gold level-up actions only work while the sleep session is active.
+	bool RequireSleepForAttributeAllocation() noexcept;
+	// When true, TESSleepStart fully restores current Health and Magicka (not Stamina).
+	bool FullRestoreHealthMagickaOnSleep() noexcept;
 }

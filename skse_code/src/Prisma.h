@@ -9,6 +9,10 @@ namespace Prisma
 	void ShowLevelUp();
 	void Hide();
 
+	// Sleep / menu gating (see [Sleep] in eras.ini).
+	void NotifySleepStarted();
+	void NotifySleepEnded();
+
 	// State helpers.
 	bool IsReady();
 	bool IsHidden();

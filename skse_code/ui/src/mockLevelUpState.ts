@@ -1,0 +1,75 @@
+import type { StatePayload } from "./stateTypes";
+
+/** Static preview payload for `?mock=1` or Vite dev (no SKSE). */
+export const MOCK_LEVEL_UP_STATE: StatePayload = {
+  ready: true,
+  levelUpMenuOpen: true,
+  allocationAllowed: true,
+  attributes: {
+    vig: 15,
+    mnd: 9,
+    end: 12,
+    str: 14,
+    dex: 11,
+    int: 8,
+    fth: 10,
+    arc: 7,
+  },
+  points: { spent: 86, level: 9, pending: 0 },
+  gold: {
+    current: 5,
+    levelUpCost: 811,
+    nextLevelUpCost: 811,
+    pendingCost: 0,
+    canLevelUp: false,
+    canAllocate: false,
+    canConfirm: false,
+  },
+  pending: {
+    attributes: { vig: 0, mnd: 0, end: 0, str: 0, dex: 0, int: 0, fth: 0, arc: 0 },
+  },
+  derived: {
+    maxHP: 454,
+    maxMP: 113,
+    maxSP: 112,
+    carryWeight: 360,
+    defense: {
+      physical: 52,
+      magic: 38,
+      fire: 41,
+      lightning: 35,
+      frost: 38,
+      poison: 38,
+    },
+    thresholds: {
+      immunity: 118,
+      robustness: 112,
+      focus: 105,
+      vitality: 99,
+      madness: 284,
+    },
+    equipLoad: { max: 360, light: 108, medium: 252, heavy: 360 },
+  },
+  derivedPending: {
+    maxHP: 454,
+    maxMP: 113,
+    maxSP: 112,
+    carryWeight: 360,
+    defense: {
+      physical: 52,
+      magic: 38,
+      fire: 41,
+      lightning: 35,
+      frost: 38,
+      poison: 38,
+    },
+    thresholds: {
+      immunity: 118,
+      robustness: 112,
+      focus: 105,
+      vitality: 99,
+      madness: 284,
+    },
+    equipLoad: { max: 360, light: 108, medium: 252, heavy: 360 },
+  },
+};

@@ -42,6 +42,7 @@ namespace ER
 	};
 
 	PublishedSheetAVGs ComputePublishedSheetAVGs(const AttributeSet& attrs, std::int32_t erLevel, const DerivedStats& derived);
+	PublishedSheetAVGs ComputePublishedSheetAVGsForActor(RE::Actor* actor, const AttributeSet& attrs, std::int32_t erLevel, const DerivedStats& derived);
 	StatsSnapshot BuildStatsSnapshot(const AttributeSet& attrs, std::int32_t erLevel);
 	StatsSnapshot GetStatsSnapshotForActor(RE::Actor* actor);
 	StatsSnapshot GetCurrentStatsSnapshot();
@@ -56,5 +57,12 @@ namespace ER
 	DerivedStats ComputeDerived(const AttributeSet& attrs);
 	void ApplyToPlayer(const DerivedStats& stats);
 	void ApplyToPlayer(const DerivedStats& stats, const AttributeSet& attrs, std::int32_t erLevel);
+
+	// Bed sleep (TESSleepStart): optional full Health/Magicka restore; see [Sleep] in eras.ini.
+	void RestorePlayerHealthMagickaOnSleep();
+
+	// Sets base Health/Magicka/Stamina/CarryWeight from ER::ComputeDerived(ER::GetAll(actor)).
+	// Caller must ensure actor is a valid target (e.g. IsNPCAttributeEligible); does not run for the player.
+	void ApplyDerivedResourcePoolsToActor(RE::Actor* actor);
 }
 

@@ -6,6 +6,7 @@
 #include <filesystem>
 #include <fstream>
 #include <limits>
+#include <unordered_set>
 
 extern "C" bool SKSEAPI SKSEPlugin_Load(const SKSE::LoadInterface* skse);
 
@@ -206,31 +207,105 @@ namespace ER
 
 			RE::BSEventNotifyControl ProcessEvent(const RE::TESDeathEvent* a_event, RE::BSTEventSource<RE::TESDeathEvent>*) override
 			{
-				if (!a_event || !a_event->dead || !a_event->actorDying || !a_event->actorKiller) {
+				// Skyrim sends several TESDeathEvents per kill. The one with actorKiller / myKiller filled
+				// is often NOT the same as dead==true; waiting only for dead==true can miss credit entirely.
+				// Dedupe by victim handle so we still pay at most once per corpse.
+				if (!a_event || !a_event->actorDying) {
 					return RE::BSEventNotifyControl::kContinue;
 				}
 
 				auto* player = RE::PlayerCharacter::GetSingleton();
-				auto* killerRef = a_event->actorKiller.get();
 				auto* victimRef = a_event->actorDying.get();
-				if (!player || !killerRef || !victimRef) {
+				if (!player || !victimRef) {
 					return RE::BSEventNotifyControl::kContinue;
 				}
-				if (killerRef != player) {
-					return RE::BSEventNotifyControl::kContinue;
-				}
-				if (victimRef->GetFormType() != RE::FormType::ActorCharacter) {
+				auto* victim = victimRef->As<RE::Actor>();
+				if (!victim) {
 					return RE::BSEventNotifyControl::kContinue;
 				}
 
-				auto* victim = static_cast<RE::Actor*>(victimRef);
+				const auto refIsPlayer = [](RE::TESObjectREFR* ref) -> bool {
+					if (!ref) {
+						return false;
+					}
+					if (ref->IsPlayerRef()) {
+						return true;
+					}
+					if (auto* actor = ref->As<RE::Actor>()) {
+						return actor->IsPlayerRef();
+					}
+					if (auto* proj = ref->As<RE::Projectile>()) {
+						if (auto* shooter = proj->GetProjectileRuntimeData().shooter.get().get()) {
+							if (shooter->IsPlayerRef()) {
+								return true;
+							}
+							if (auto* shooterActor = shooter->As<RE::Actor>()) {
+								return shooterActor->IsPlayerRef();
+							}
+						}
+					}
+					return false;
+				};
+
+				auto playerKilledVictim = [&]() -> bool {
+					if (auto* killerRef = a_event->actorKiller.get()) {
+						return refIsPlayer(killerRef);
+					}
+					// GetKiller() returns nullptr once the victim is dead (see Actor.cpp). Read myKiller
+					// directly from runtime data (ActorHandle — another Actor, not projectiles).
+					if (auto* killerActor = victim->GetActorRuntimeData().myKiller.get().get()) {
+						if (killerActor->IsPlayerRef()) {
+							return true;
+						}
+					}
+					// Humanoids often go through bleedout / killmoves where TESDeathEvent omits actorKiller and
+					// myKiller is cleared, but MiddleHighProcessData still has the last hit / bleedout attacker.
+					if (auto* mid = victim->GetMiddleHighProcess()) {
+						if (mid->lastHitData) {
+							const auto& hit = *mid->lastHitData;
+							if (auto* agg = hit.aggressor.get().get()) {
+								if (agg->IsPlayerRef()) {
+									return true;
+								}
+							}
+							if (auto* src = hit.sourceRef.get().get()) {
+								if (refIsPlayer(src)) {
+									return true;
+								}
+							}
+						}
+						if (mid->bleedoutAttacker != 0) {
+							if (auto lastAttacker = RE::Actor::LookupByHandle(mid->bleedoutAttacker)) {
+								if (lastAttacker->IsPlayerRef()) {
+									return true;
+								}
+							}
+						}
+					}
+					return false;
+				};
+				if (!playerKilledVictim()) {
+					return RE::BSEventNotifyControl::kContinue;
+				}
+
+				static std::unordered_set<std::uint32_t> s_paidVictimHandles;
+				std::uint32_t dedupeKey = victim->GetHandle().native_handle();
+				if (dedupeKey == 0) {
+					dedupeKey = static_cast<std::uint32_t>(reinterpret_cast<std::uintptr_t>(victim) >> 3);
+				}
+				if (!s_paidVictimHandles.insert(dedupeKey).second) {
+					return RE::BSEventNotifyControl::kContinue;
+				}
+
 				const auto reward = ComputeGoldFromKill(victim);
 				if (reward <= 0) {
+					s_paidVictimHandles.erase(dedupeKey);
 					return RE::BSEventNotifyControl::kContinue;
 				}
 
 				auto* gold = RE::TESForm::LookupByID<RE::TESObjectMISC>(0x0000000F);
 				if (!gold) {
+					s_paidVictimHandles.erase(dedupeKey);
 					return RE::BSEventNotifyControl::kContinue;
 				}
 				player->AddObjectToContainer(gold, nullptr, reward, nullptr);
@@ -246,6 +321,11 @@ namespace ER
 
 	void InstallGoldKillReward()
 	{
+		static bool s_installed = false;
+		if (s_installed) {
+			return;
+		}
+
 		LoadGoldDropConfig();
 		auto* sourceHolder = RE::ScriptEventSourceHolder::GetSingleton();
 		if (!sourceHolder) {
@@ -253,6 +333,7 @@ namespace ER
 			return;
 		}
 		sourceHolder->AddEventSink<RE::TESDeathEvent>(GoldKillRewardSink::GetSingleton());
+		s_installed = true;
 		logger::info("Installed gold kill reward sink");
 	}
 }

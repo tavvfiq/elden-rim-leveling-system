@@ -34,6 +34,10 @@ namespace
 		bool enableGoldKillDrops{ false };
 		bool enablePerkPointParity{ true };
 		bool enablePerkAutoUnlock{ true };
+		bool applyNpcDerivedPoolsOnLoad{ true };
+		bool openSkillMenuOnSleep{ true };
+		bool requireSleepForAttributeAllocation{ true };
+		bool fullRestoreHealthMagickaOnSleep{ true };
 	};
 
 	Settings g_settings{};
@@ -119,6 +123,17 @@ namespace
 			return;
 		}
 
+		if (sectionLower == "sleep") {
+			if (keyLower == "openskillmenuonsleep" && ParseBool(value, b)) {
+				g_settings.openSkillMenuOnSleep = b;
+			} else if (keyLower == "requiresleepforattributeallocation" && ParseBool(value, b)) {
+				g_settings.requireSleepForAttributeAllocation = b;
+			} else if (keyLower == "fullrestorehealthmagickaonsleep" && ParseBool(value, b)) {
+				g_settings.fullRestoreHealthMagickaOnSleep = b;
+			}
+			return;
+		}
+
 		if (sectionLower != "tuning") {
 			return;
 		}
@@ -133,6 +148,8 @@ namespace
 			g_settings.enablePerkPointParity = b;
 		} else if (keyLower == "enableperkautounlock" && ParseBool(value, b)) {
 			g_settings.enablePerkAutoUnlock = b;
+		} else if (keyLower == "applynpcderivedpoolsonload" && ParseBool(value, b)) {
+			g_settings.applyNpcDerivedPoolsOnLoad = b;
 		} else if (keyLower == "hpperlevelgain" && ParseFloat(value, f)) {
 			g_settings.hpPerLevelGain = f;
 		} else if (keyLower == "mpperlevelgain" && ParseFloat(value, f)) {
@@ -307,6 +324,26 @@ namespace ER::Config
 	bool EnablePerkAutoUnlock() noexcept
 	{
 		return g_settings.enablePerkAutoUnlock;
+	}
+
+	bool ApplyNpcDerivedPoolsOnLoad() noexcept
+	{
+		return g_settings.applyNpcDerivedPoolsOnLoad;
+	}
+
+	bool OpenSkillMenuOnSleep() noexcept
+	{
+		return g_settings.openSkillMenuOnSleep;
+	}
+
+	bool RequireSleepForAttributeAllocation() noexcept
+	{
+		return g_settings.requireSleepForAttributeAllocation;
+	}
+
+	bool FullRestoreHealthMagickaOnSleep() noexcept
+	{
+		return g_settings.fullRestoreHealthMagickaOnSleep;
 	}
 
 }

@@ -1,59 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
-
-type AttrKey = "vig" | "mnd" | "end" | "str" | "dex" | "int" | "fth" | "arc";
-
-type DefenseSheet = {
-  physical: number;
-  magic: number;
-  fire: number;
-  lightning: number;
-  frost: number;
-  poison: number;
-};
-
-type ThresholdSheet = {
-  immunity: number;
-  robustness: number;
-  focus: number;
-  vitality: number;
-  madness: number;
-};
-
-type EquipLoadSheet = {
-  max: number;
-  light: number;
-  medium: number;
-  heavy: number;
-};
-
-type DerivedBlock = {
-  maxHP: number;
-  maxMP: number;
-  maxSP: number;
-  carryWeight: number;
-  defense?: DefenseSheet;
-  thresholds?: ThresholdSheet;
-  equipLoad?: EquipLoadSheet;
-};
-
-type StatePayload = {
-  ready: boolean;
-  levelUpMenuOpen: boolean;
-  attributes: Record<AttrKey, number>;
-  points: { spent: number; level: number; pending: number };
-  derived: DerivedBlock;
-  derivedPending: DerivedBlock;
-  gold: {
-    current: number;
-    levelUpCost: number;
-    nextLevelUpCost: number;
-    pendingCost: number;
-    canLevelUp: boolean;
-    canAllocate: boolean;
-    canConfirm: boolean;
-  };
-  pending: { attributes: Partial<Record<AttrKey, number>> };
-};
+import { MOCK_LEVEL_UP_STATE } from "./mockLevelUpState";
+import type { AttrKey, StatePayload } from "./stateTypes";
 
 declare global {
   interface Window {
@@ -96,8 +43,16 @@ function trendClass(current: number | undefined, next: number | undefined): stri
   return "";
 }
 
+function useMockPreviewEnabled(): boolean {
+  return (
+    typeof window !== "undefined" &&
+    (import.meta.env.DEV || new URLSearchParams(window.location.search).has("mock"))
+  );
+}
+
 export function App() {
-  const [state, setState] = useState<StatePayload | null>(null);
+  const mockPreview = useMockPreviewEnabled();
+  const [state, setState] = useState<StatePayload | null>(mockPreview ? MOCK_LEVEL_UP_STATE : null);
 
   useEffect(() => {
     const onUpdate = (ev: Event) => {
@@ -119,285 +74,311 @@ export function App() {
     return (Object.keys(attrs) as AttrKey[]).map((k) => ({ key: k, value: attrs[k] }));
   }, [state]);
 
-  const pending: Partial<Record<AttrKey, number>> = state?.pending.attributes ?? {};
-  const pendingPoints = state?.points.pending ?? 0;
-  const hasPending = pendingPoints > 0;
-  const goldCurrent = state?.gold.current ?? 0;
-  const goldNeeded = state?.gold.nextLevelUpCost ?? 0;
-  const hasEnoughGold = (goldCurrent - (state?.gold.pendingCost ?? 0)) >= goldNeeded;
-
-  const d = state?.derived;
-  const dp = state?.derivedPending;
-
   const send = (fn: keyof Window, payload: unknown) => {
     const f = (window as any)[fn];
     if (typeof f === "function") f(JSON.stringify(payload ?? {}));
   };
 
+  if (!state?.ready) {
+    return (
+      <div className="erRoot">
+        <div className="erBackdrop" aria-hidden="true" />
+        <div className="erLoading">…</div>
+      </div>
+    );
+  }
+
+  const pending = state.pending.attributes;
+  const pendingPoints = state.points.pending;
+  const hasPending = pendingPoints > 0;
+  const goldCurrent = state.gold.current;
+  const goldNeeded = state.gold.nextLevelUpCost;
+  const hasEnoughGold = goldCurrent - state.gold.pendingCost >= goldNeeded;
+
+  const d = state.derived;
+  const dp = state.derivedPending;
+
+  const viewOnly = !state.allocationAllowed;
+
+  const decreaseButton = "<";
+  const increaseButton = ">";
+
   return (
-    <div className="wrap">
-      <div className="panelFrame">
-        <span className="cornerBotLeft" aria-hidden="true"></span>
-        <span className="cornerBotRight" aria-hidden="true"></span>
+    <div className="erRoot">
+      <div className="erBackdrop" aria-hidden="true" />
+      <div className="erVignette" aria-hidden="true" />
 
-        <div className="topbar">
-          <div>
-            <div className="title">Level Up</div>
-          </div>
-        </div>
-
-        <div className="layout">
-          <div className="left">
-            <div className="section">
-              <div className="kv">
-                <div className="kvRow">
-                  <div className="label">Level</div>
-                  <div className="val">{state?.points.level ?? 1}</div>
-                  <div className="arrow">→</div>
-                  <div
-                    className={`val${trendClass(
-                      state?.points.level ?? 1,
-                      (state?.points.level ?? 1) + pendingPoints,
-                    )}`}
-                  >
-                    {(state?.points.level ?? 1) + pendingPoints}
-                  </div>
-                </div>
-                <div className="kvRow">
-                  <div className="label">Gold Held</div>
-                  <div className="val">{goldCurrent}</div>
-                  <div className="arrow">→</div>
-                  <div className={`val${hasEnoughGold ? "" : " danger"}`}>
-                    {(goldCurrent - (state?.gold.pendingCost ?? 0))}
-                  </div>
-                </div>
-                <div className="kvRow">
-                  <div className="label">Gold Needed</div>
-                  <div className="val"></div>
-                  <div className="arrow"></div>
-                  <div className={`val${hasEnoughGold ? "" : " danger"}`}>
-                    {state?.gold.nextLevelUpCost ?? 0}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="section">
-              <div className="sectionTitle">Attribute Points</div>
-
-              <div className="kv">
-                {rows.map((r: { key: AttrKey; value: number }) => (
-                  <div className="kvRow" key={r.key}>
-                    <div className="label">{statLabels[r.key]}</div>
-                    <div className="val">{r.value}</div>
-                    <div className="arrow">→</div>
-                    <div className={`val${trendClass(r.value, r.value + (pending[r.key] ?? 0))}`}>
-                      <span className="spin">
-                        <button
-                          onClick={() => send("refundPoint", { attr: r.key })}
-                          disabled={!pending[r.key]}
-                        >
-                          ‹
-                        </button>
-                        {r.value + (pending[r.key] ?? 0)}
-                        <button
-                          onClick={() => send("allocatePoint", { attr: r.key })}
-                          disabled={!state?.gold.canAllocate}
-                        >
-                          ›
-                        </button>
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <div style={{ marginTop: 10 }}>
-                <button
-                  className="primaryBtn"
-                  onClick={() => send("confirmAllocation", {})}
-                  disabled={!hasPending || !state?.gold.canConfirm}
-                >
-                  Confirm
-                </button>
-                <button className="ghostBtn" onClick={() => send("cancelAllocation", {})}>
-                  Cancel
-                </button>
-              </div>
+      <div className="erShell">
+        <header className="erHeader">
+          <div className="erHeaderTitleRow">
+            <span className="erIcon" aria-hidden="true" />
+            <div>
+              <h1 className="erTitle">Level Up</h1>
+              {viewOnly ? (
+                <p className="erSubtitle">View only — rest in a bed to level attributes.</p>
+              ) : (
+                <p className="erSubtitleMuted">Choose attribute to level up.</p>
+              )}
             </div>
           </div>
+        </header>
 
-          <div className="right">
-            <div className="section">
-              <div className="sectionTitle">Base Stats</div>
-              <div className="kv">
-                <div className="kvRow">
-                  <div className="label">HP</div>
-                  <div className="val">{state?.derived.maxHP ?? 0}</div>
-                  <div className="arrow">→</div>
-                  <div className={`val${trendClass(state?.derived.maxHP, state?.derivedPending.maxHP)}`}>
-                    {state?.derivedPending.maxHP ?? 0}
-                  </div>
+        <main className="erMain">
+          <section className="erCol erColAttr">
+            <div className="erHeaderRunes erHeaderRunesInCol" aria-label="Level and gold">
+              <div className="erRuneRow">
+                <span className="erRuneLabel">Level</span>
+                <span className="erRuneVal">{state.points.level}</span>
+                <span className="erRuneArrow">→</span>
+                <span className={`erRuneNext${trendClass(state.points.level, state.points.level + pendingPoints)}`}>
+                  {state.points.level + pendingPoints}
+                </span>
+              </div>
+              <div className="erRuneRow">
+                <span className="erRuneLabel">Gold held</span>
+                <span className="erRuneVal">{goldCurrent}</span>
+                <span className="erRuneArrow">→</span>
+                <span className={`erRuneNext${hasEnoughGold ? "" : " erDanger"}`}>
+                  {goldCurrent - state.gold.pendingCost}
+                </span>
+              </div>
+              <div className="erRuneRow">
+                <span className="erRuneLabel">Gold needed</span>
+                <span className="erRuneVal" />
+                <span className="erRuneArrow"></span>
+                <span className={`erRuneNext${hasEnoughGold ? "" : " erDanger"}`}>{state.gold.nextLevelUpCost}</span>
+              </div>
+            </div>
+            <h2 className="erColTitle">Attributes</h2>
+            <div className="erKv">
+              {rows.map((r) => (
+                <div className="erKvRow" key={r.key}>
+                  <span className="erLabel">{statLabels[r.key]}</span>
+                  <span className="erVal erValCur">{r.value}</span>
+                  <span className="erArrow">→</span>
+                  <span className={`erVal erValNext${trendClass(r.value, r.value + (pending[r.key] ?? 0))}`}>
+                    <span className="erSpin">
+                      <button
+                        type="button"
+                        className="erSpinBtn"
+                        onClick={() => send("refundPoint", { attr: r.key })}
+                        disabled={viewOnly || !pending[r.key]}
+                        aria-label="Decrease"
+                      >
+                        {decreaseButton}
+                      </button>
+                      <span className="erSpinNum">{r.value + (pending[r.key] ?? 0)}</span>
+                      <button
+                        type="button"
+                        className="erSpinBtn"
+                        onClick={() => send("allocatePoint", { attr: r.key })}
+                        disabled={viewOnly || !state.gold.canAllocate}
+                        aria-label="Increase"
+                      >
+                        {increaseButton}
+                      </button>
+                    </span>
+                  </span>
                 </div>
-                <div className="kvRow">
-                  <div className="label">MP</div>
-                  <div className="val">{state?.derived.maxMP ?? 0}</div>
-                  <div className="arrow">→</div>
-                  <div className={`val${trendClass(state?.derived.maxMP, state?.derivedPending.maxMP)}`}>
-                    {state?.derivedPending.maxMP ?? 0}
-                  </div>
-                </div>
-                <div className="kvRow">
-                  <div className="label">Stamina</div>
-                  <div className="val">{state?.derived.maxSP ?? 0}</div>
-                  <div className="arrow">→</div>
-                  <div className={`val${trendClass(state?.derived.maxSP, state?.derivedPending.maxSP)}`}>
-                    {state?.derivedPending.maxSP ?? 0}
-                  </div>
-                </div>
-                <div className="kvRow">
-                  <div className="label">Carry Weight</div>
-                  <div className="val">{state?.derived.carryWeight ?? 0}</div>
-                  <div className="arrow">→</div>
-                  <div
-                    className={`val${trendClass(
-                      state?.derived.carryWeight,
-                      state?.derivedPending.carryWeight,
-                    )}`}
-                  >
-                    {state?.derivedPending.carryWeight ?? 0}
-                  </div>
-                </div>
-                <div className="kvRow">
-                  <div className="label">Equip load max</div>
-                  <div className="val">{fmtSheet(d?.equipLoad?.max)}</div>
-                  <div className="arrow">→</div>
-                  <div className={`val${trendClass(d?.equipLoad?.max, dp?.equipLoad?.max)}`}>
-                    {fmtSheet(dp?.equipLoad?.max)}
-                  </div>
-                </div>
-                <div className="kvRow">
-                  <div className="label">Equip light tier</div>
-                  <div className="val">{fmtSheet(d?.equipLoad?.light)}</div>
-                  <div className="arrow">→</div>
-                  <div className={`val${trendClass(d?.equipLoad?.light, dp?.equipLoad?.light)}`}>
-                    {fmtSheet(dp?.equipLoad?.light)}
-                  </div>
-                </div>
-                <div className="kvRow">
-                  <div className="label">Equip medium tier</div>
-                  <div className="val">{fmtSheet(d?.equipLoad?.medium)}</div>
-                  <div className="arrow">→</div>
-                  <div className={`val${trendClass(d?.equipLoad?.medium, dp?.equipLoad?.medium)}`}>
-                    {fmtSheet(dp?.equipLoad?.medium)}
-                  </div>
-                </div>
+              ))}
+            </div>
+            <div className="erActions">
+              <button
+                type="button"
+                className="erBtnPrimary"
+                onClick={() => send("confirmAllocation", {})}
+                disabled={viewOnly || !hasPending || !state.gold.canConfirm}
+              >
+                Confirm
+              </button>
+              <button type="button" className="erBtnGhost" onClick={() => send("cancelAllocation", {})}>
+                Cancel
+              </button>
+            </div>
+          </section>
+
+          <section className="erCol erColMid">
+            <h2 className="erColTitle">Base stats</h2>
+            <div className="erKv">
+              <div className="erKvRow">
+                <span className="erLabel">HP</span>
+                <span className="erVal erValCur">{state.derived.maxHP}</span>
+                <span className="erArrow">→</span>
+                <span className={`erVal erValNext${trendClass(state.derived.maxHP, state.derivedPending.maxHP)}`}>
+                  {state.derivedPending.maxHP}
+                </span>
+              </div>
+              <div className="erKvRow">
+                <span className="erLabel">MP</span>
+                <span className="erVal erValCur">{state.derived.maxMP}</span>
+                <span className="erArrow">→</span>
+                <span className={`erVal erValNext${trendClass(state.derived.maxMP, state.derivedPending.maxMP)}`}>
+                  {state.derivedPending.maxMP}
+                </span>
+              </div>
+              <div className="erKvRow">
+                <span className="erLabel">Stamina</span>
+                <span className="erVal erValCur">{state.derived.maxSP}</span>
+                <span className="erArrow">→</span>
+                <span className={`erVal erValNext${trendClass(state.derived.maxSP, state.derivedPending.maxSP)}`}>
+                  {state.derivedPending.maxSP}
+                </span>
+              </div>
+              <div className="erKvRow">
+                <span className="erLabel">Max equip load</span>
+                <span className="erVal erValCur">{fmtSheet(d.equipLoad.max)}</span>
+                <span className="erArrow">→</span>
+                <span className={`erVal erValNext${trendClass(d.equipLoad.max, dp.equipLoad.max)}`}>
+                  {fmtSheet(dp.equipLoad.max)}
+                </span>
+              </div>
+              <div className="erKvRow">
+                <span className="erLabel">Light load</span>
+                <span className="erVal erValCur">
+                  {fmtSheet(d.equipLoad.light)}
+                </span>
+                <span className="erArrow">→</span>
+                <span className="erVal erValNext">
+                  {fmtSheet(dp.equipLoad.light)}
+                </span>
+              </div>
+              <div className="erKvRow">
+                <span className="erLabel">Med load</span>
+                <span className="erVal erValCur">
+                  {fmtSheet(d.equipLoad.medium)}
+                </span>
+                <span className="erArrow">→</span>
+                <span className="erVal erValNext">
+                  {fmtSheet(dp.equipLoad.medium)}
+                </span>
               </div>
             </div>
 
-            <div className="section">
-              <div className="sectionTitle">Defense Power</div>
-              <div className="kv">
-                <div className="kvRow">
-                  <div className="label">Physical</div>
-                  <div className="val">{fmtSheet(d?.defense?.physical)}</div>
-                  <div className="arrow">→</div>
-                  <div className={`val${trendClass(d?.defense?.physical, dp?.defense?.physical)}`}>
-                    {fmtSheet(dp?.defense?.physical)}
-                  </div>
-                </div>
-                <div className="kvRow">
-                  <div className="label">Magic</div>
-                  <div className="val">{fmtSheet(d?.defense?.magic)}</div>
-                  <div className="arrow">→</div>
-                  <div className={`val${trendClass(d?.defense?.magic, dp?.defense?.magic)}`}>
-                    {fmtSheet(dp?.defense?.magic)}
-                  </div>
-                </div>
-                <div className="kvRow">
-                  <div className="label">Fire</div>
-                  <div className="val">{fmtSheet(d?.defense?.fire)}</div>
-                  <div className="arrow">→</div>
-                  <div className={`val${trendClass(d?.defense?.fire, dp?.defense?.fire)}`}>
-                    {fmtSheet(dp?.defense?.fire)}
-                  </div>
-                </div>
-                <div className="kvRow">
-                  <div className="label">Lightning</div>
-                  <div className="val">{fmtSheet(d?.defense?.lightning)}</div>
-                  <div className="arrow">→</div>
-                  <div className={`val${trendClass(d?.defense?.lightning, dp?.defense?.lightning)}`}>
-                    {fmtSheet(dp?.defense?.lightning)}
-                  </div>
-                </div>
-                <div className="kvRow">
-                  <div className="label">Frost</div>
-                  <div className="val">{fmtSheet(d?.defense?.frost)}</div>
-                  <div className="arrow">→</div>
-                  <div className={`val${trendClass(d?.defense?.frost, dp?.defense?.frost)}`}>
-                    {fmtSheet(dp?.defense?.frost)}
-                  </div>
-                </div>
-                <div className="kvRow">
-                  <div className="label">Poison</div>
-                  <div className="val">{fmtSheet(d?.defense?.poison)}</div>
-                  <div className="arrow">→</div>
-                  <div className={`val${trendClass(d?.defense?.poison, dp?.defense?.poison)}`}>
-                    {fmtSheet(dp?.defense?.poison)}
-                  </div>
-                </div>
+          </section>
+
+          <section className="erCol erColRight">
+            <h2 className="erColTitle">Defense power</h2>
+            <div className="erKv">
+              <div className="erKvRow">
+                <span className="erLabel">Physical</span>
+                <span className="erVal erValCur">{fmtSheet(d.defense.physical)}</span>
+                <span className="erArrow">→</span>
+                <span className={`erVal erValNext${trendClass(d.defense.physical, dp.defense.physical)}`}>
+                  {fmtSheet(dp.defense.physical)}
+                </span>
+              </div>
+              <div className="erKvRow">
+                <span className="erLabel">Magic</span>
+                <span className="erVal erValCur">{fmtSheet(d.defense.magic)}</span>
+                <span className="erArrow">→</span>
+                <span className={`erVal erValNext${trendClass(d.defense.magic, dp.defense.magic)}`}>
+                  {fmtSheet(dp.defense.magic)}
+                </span>
+              </div>
+              <div className="erKvRow">
+                <span className="erLabel">Fire</span>
+                <span className="erVal erValCur">{fmtSheet(d.defense.fire)}</span>
+                <span className="erArrow">→</span>
+                <span className={`erVal erValNext${trendClass(d.defense.fire, dp.defense.fire)}`}>
+                  {fmtSheet(dp.defense.fire)}
+                </span>
+              </div>
+              <div className="erKvRow">
+                <span className="erLabel">Lightning</span>
+                <span className="erVal erValCur">{fmtSheet(d.defense.lightning)}</span>
+                <span className="erArrow">→</span>
+                <span className={`erVal erValNext${trendClass(d.defense.lightning, dp.defense.lightning)}`}>
+                  {fmtSheet(dp.defense.lightning)}
+                </span>
+              </div>
+              <div className="erKvRow">
+                <span className="erLabel">Frost</span>
+                <span className="erVal erValCur">
+                  {fmtSheet(d.defense.frost)}
+                </span>
+                <span className="erArrow">→</span>
+                <span className="erVal erValNext">
+                  {fmtSheet(dp.defense.frost)}
+                </span>
+              </div>
+              <div className="erKvRow">
+                <span className="erLabel">Poison</span>
+                <span className="erVal erValCur">
+                  {fmtSheet(d.defense.poison)}
+                </span>
+                <span className="erArrow">→</span>
+                <span className="erVal erValNext">
+                  {fmtSheet(dp.defense.poison)}
+                </span>
               </div>
             </div>
 
-            <div className="section" style={{ gridColumn: "2 / 3" }}>
-              <div className="sectionTitle">Body</div>
-              <div className="kv">
-                <div className="kvRow">
-                  <div className="label">Immunity</div>
-                  <div className="val">{fmtSheet(d?.thresholds?.immunity)}</div>
-                  <div className="arrow">→</div>
-                  <div className={`val${trendClass(d?.thresholds?.immunity, dp?.thresholds?.immunity)}`}>
-                    {fmtSheet(dp?.thresholds?.immunity)}
-                  </div>
-                </div>
-                <div className="kvRow">
-                  <div className="label">Robustness</div>
-                  <div className="val">{fmtSheet(d?.thresholds?.robustness)}</div>
-                  <div className="arrow">→</div>
-                  <div className={`val${trendClass(d?.thresholds?.robustness, dp?.thresholds?.robustness)}`}>
-                    {fmtSheet(dp?.thresholds?.robustness)}
-                  </div>
-                </div>
-                <div className="kvRow">
-                  <div className="label">Focus</div>
-                  <div className="val">{fmtSheet(d?.thresholds?.focus)}</div>
-                  <div className="arrow">→</div>
-                  <div className={`val${trendClass(d?.thresholds?.focus, dp?.thresholds?.focus)}`}>
-                    {fmtSheet(dp?.thresholds?.focus)}
-                  </div>
-                </div>
-                <div className="kvRow">
-                  <div className="label">Vitality</div>
-                  <div className="val">{fmtSheet(d?.thresholds?.vitality)}</div>
-                  <div className="arrow">→</div>
-                  <div className={`val${trendClass(d?.thresholds?.vitality, dp?.thresholds?.vitality)}`}>
-                    {fmtSheet(dp?.thresholds?.vitality)}
-                  </div>
-                </div>
-                <div className="kvRow">
-                  <div className="label">Madness</div>
-                  <div className="val">{fmtSheet(d?.thresholds?.madness)}</div>
-                  <div className="arrow">→</div>
-                  <div className={`val${trendClass(d?.thresholds?.madness, dp?.thresholds?.madness)}`}>
-                    {fmtSheet(dp?.thresholds?.madness)}
-                  </div>
-                </div>
+            <h2 className="erColTitle erColTitleSpaced">Body</h2>
+            <div className="erKv">
+              <div className="erKvRow">
+                <span className="erLabel">Immunity</span>
+                <span className="erVal erValCur">{fmtSheet(d.thresholds.immunity)}</span>
+                <span className="erArrow">→</span>
+                <span className={`erVal erValNext${trendClass(d.thresholds.immunity, dp.thresholds.immunity)}`}>
+                  {fmtSheet(dp.thresholds.immunity)}
+                </span>
+              </div>
+              <div className="erKvRow">
+                <span className="erLabel">Robustness</span>
+                <span className="erVal erValCur">{fmtSheet(d.thresholds.robustness)}</span>
+                <span className="erArrow">→</span>
+                <span className={`erVal erValNext${trendClass(d.thresholds.robustness, dp.thresholds.robustness)}`}>
+                  {fmtSheet(dp.thresholds.robustness)}
+                </span>
+              </div>
+              <div className="erKvRow">
+                <span className="erLabel">Focus</span>
+                <span className="erVal erValCur">{fmtSheet(d.thresholds.focus)}</span>
+                <span className="erArrow">→</span>
+                <span className={`erVal erValNext${trendClass(d.thresholds.focus, dp.thresholds.focus)}`}>
+                  {fmtSheet(dp.thresholds.focus)}
+                </span>
+              </div>
+              <div className="erKvRow">
+                <span className="erLabel">Vitality</span>
+                <span className="erVal erValCur">{fmtSheet(d.thresholds.vitality)}</span>
+                <span className="erArrow">→</span>
+                <span className={`erVal erValNext${trendClass(d.thresholds.vitality, dp.thresholds.vitality)}`}>
+                  {fmtSheet(dp.thresholds.vitality)}
+                </span>
+              </div>
+              <div className="erKvRow">
+                <span className="erLabel">Madness</span>
+                <span className="erVal erValCur">{fmtSheet(d.thresholds.madness)}</span>
+                <span className="erArrow">→</span>
+                <span className={`erVal erValNext${trendClass(d.thresholds.madness, dp.thresholds.madness)}`}>
+                  {fmtSheet(dp.thresholds.madness)}
+                </span>
               </div>
             </div>
+          </section>
+        </main>
+
+        <footer className="erFooter">
+          <div className="erFooterHints">
+            <span>
+              <kbd className="erKbd">A</kbd> OK
+            </span>
+            <span>
+              <kbd className="erKbd">B</kbd> Back
+            </span>
+            <span>
+              <kbd className="erKbd">RS</kbd> Simple view
+            </span>
+            <span>
+              <kbd className="erKbd">Sel</kbd> Help
+            </span>
           </div>
-        </div>
+          {mockPreview ? (
+            <p className="erMockBadge">Mock preview — add <code>?mock=1</code> or run Vite dev</p>
+          ) : null}
+        </footer>
       </div>
     </div>
   );
 }
-
